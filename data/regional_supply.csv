@@ -1,0 +1,8 @@
+District,Biomass_Type,Technology,Available_GJ,Notes
+Montagnes,Cocoa,Biochar,63000000,Derived from cocoa pods
+Bas-Sassandra,Cocoa,Biochar,42000000,High cocoa pod availability
+Sassandra-Marahoué,Cocoa,Biochar,31500000,Biomass project zone
+Comoé,Palm Oil,Biogas (EFB),4250000,From Sud-Comoé EFB
+Bas-Sassandra,Palm Oil,Biogas (EFB),6800000,From San Pedro EFB
+Gôh-Djiboua,Palm Oil,Biogas (EFB),3400000,From Divo region
+Lagunes,Palm Oil,Biogas (EFB),2125000,"From Agnéby-Tiassa, La Mé"

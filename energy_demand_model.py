@@ -1,0 +1,105 @@
+"""
+# energy_demand_model.py
+
+This module contains functions to translate demographic inputs into
+energy demand metrics. It includes a function to project household 
+cooking energy demand from per-capita values, and precomputed lookup 
+tables for regional demand by year.
+"""
+
+from __future__ import annotations
+# Import regional definitions and per-household demand constants from the root modules
+from spatial_config import (
+    regions,
+    URBAN_DEMAND_GJ_PER_HH,
+    RURAL_DEMAND_GJ_PER_HH,
+)
+from data_input import get_parameters
+
+# -------------------------------------------------------
+# Function: Total Cooking Energy Demand (GJ)
+# -------------------------------------------------------
+
+def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) -> float:
+    """Return total annual cooking energy demand.
+
+    Energy demand is assumed to scale linearly with population. This
+    function simply multiplies the total population by a per-capita
+    energy demand (in gigajoules per person per year).
+
+    Parameters
+    ----------
+    total_pop : float
+        Total population in the year of interest.
+    cooking_demand_per_capita : float
+        Annual cooking energy demand per capita (GJ per person per year).
+
+    Returns
+    -------
+    float
+        Total annual cooking energy demand in gigajoules (GJ).
+    """
+    return total_pop * cooking_demand_per_capita
+
+
+def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
+    """Return total annual cooking energy demand given household counts.
+
+    Multiplies the number of urban and rural households by their
+    respective per‑household demand constants defined in
+    :mod:`spatial_config`.
+
+    Parameters
+    ----------
+    urban_hh : float
+        Number of urban households in the year of interest.
+    rural_hh : float
+        Number of rural households in the year of interest.
+
+    Returns
+    -------
+    float
+        Total annual cooking energy demand in gigajoules (GJ).
+    """
+    return (
+        urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
+    )
+
+# -------------------------------------------------------
+# Parameters and Precomputed Demand Table
+# -------------------------------------------------------
+
+params = get_parameters()
+
+def project_population(base_year: int, target_year: int, base_population: int, annual_growth_rate: float) -> float:
+    """Compound population projection using exponential growth."""
+    years = target_year - base_year
+    return base_population * ((1 + annual_growth_rate) ** years)
+
+# Set base assumptions
+base_year = 2025
+base_population = params["population_total_2025"]
+growth_rate = params["population_growth_rate_annual"]
+per_capita_demand = params["cooking_energy_demand_per_capita_GJ_yr"]
+
+# Define model years
+years = [2030, 2040, 2050]
+
+# Uniform regional population assumption
+n_regions = len(regions)
+population_by_year_and_region = {
+    yr: {
+        reg: project_population(base_year, yr, base_population, growth_rate) / n_regions
+        for reg in regions
+    }
+    for yr in years
+}
+
+# Total cooking energy demand by year and region (GJ)
+total_cooking_demand_GJ_by_year_and_region = {
+    yr: {
+        reg: project_energy_demand(pop, per_capita_demand)
+        for reg, pop in region_pops.items()
+    }
+    for yr, region_pops in population_by_year_and_region.items()
+}

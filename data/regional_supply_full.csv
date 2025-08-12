@@ -1,0 +1,20 @@
+District,Biomass_Type,Technology,Available_GJ,Notes
+Montagnes,Cocoa,Biochar,63000000,Derived from cocoa pods
+Bas-Sassandra,Cocoa,Biochar,42000000,High cocoa pod availability
+Sassandra-Marahoué,Cocoa,Biochar,31500000,Biomass project zone
+Comoé,Palm Oil,Biogas (EFB),4250000,From Sud-Comoé EFB
+Bas-Sassandra,Palm Oil,Biogas (EFB),6800000,From San Pedro EFB
+Gôh-Djiboua,Palm Oil,Biogas (EFB),3400000,From Divo region
+Lagunes,Palm Oil,Biogas (EFB),2125000,"From Agnéby-Tiassa, La Mé"
+Comoé,Rubber Wood,Wood Chips,225000,SBP-certified smallholder rubber biomass
+Lagunes,Rubber Wood,Wood Chips,450000,Expansion from forest and sawdust residues
+Abidjan,Mixed Biomass,Mixed (proxy),0,Extrapolated using rural HH × avg biomass intensity
+Agnéby-Tiassa,Mixed Biomass,Mixed (proxy),38609341,Extrapolated using rural HH × avg biomass intensity
+Béré,Mixed Biomass,Mixed (proxy),45043316,Extrapolated using rural HH × avg biomass intensity
+Gbêkê,Mixed Biomass,Mixed (proxy),43434626,Extrapolated using rural HH × avg biomass intensity
+Guémon,Mixed Biomass,Mixed (proxy),52282420,Extrapolated using rural HH × avg biomass intensity
+Gôh,Mixed Biomass,Mixed (proxy),45043316,Extrapolated using rural HH × avg biomass intensity
+San Pedro,Mixed Biomass,Mixed (proxy),24130348,Extrapolated using rural HH × avg biomass intensity
+Sud-Comoé,Mixed Biomass,Mixed (proxy),38608556,Extrapolated using rural HH × avg biomass intensity
+Vallée du Bandama,Mixed Biomass,Mixed (proxy),48260695,Extrapolated using rural HH × avg biomass intensity
+Yamoussoukro,Mixed Biomass,Mixed (proxy),16086898,Extrapolated using rural HH × avg biomass intensity

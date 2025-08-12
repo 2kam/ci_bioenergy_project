@@ -1,0 +1,8 @@
+District,Biomass_Type,Residue,Volume_t_per_year,GJ_per_t,Total_GJ
+Montagnes,Cocoa,Cocoa Pods,3000000,21.0,63000000.0
+Bas-Sassandra,Cocoa,Cocoa Pods,2000000,21.0,42000000.0
+Sassandra-Marahoué,Cocoa,Cocoa Pods,1500000,21.0,31500000.0
+Comoé,Palm Oil,EFB,500000,8.5,4250000.0
+Bas-Sassandra,Palm Oil,EFB,800000,8.5,6800000.0
+Gôh-Djiboua,Palm Oil,EFB,400000,8.5,3400000.0
+Lagunes,Palm Oil,EFB,250000,8.5,2125000.0
