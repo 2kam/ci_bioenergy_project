@@ -34,14 +34,13 @@ from spatial_config import (
     demand_by_region_year,
     urban_hh_by_region_year,
     rural_hh_by_region_year,
-    URBAN_DEMAND_GJ_PER_HH,
-    RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
 from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
+
 
 
 def _load_levelised_costs(
@@ -66,24 +65,19 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
 
     """Derive an approximate cost per gigajoule for each technology.
 
-    Parameters
-    ----------
-    urban_hh, rural_hh : float
-        Number of urban and rural households in the region. These are
-        used to weight the assumed household cooking energy demand
-        (``URBAN_DEMAND_GJ_PER_HH`` and ``RURAL_DEMAND_GJ_PER_HH``)
-        when converting household CAPEX to a per‑gigajoule basis.
 
-    The original cost optimisation model separates capital expenditure
-    (CAPEX) and fuel costs. CAPEX is specified per household and
-    amortised over a 15‑year stove lifetime. The resulting cost per GJ
-    is the sum of the amortised CAPEX and the fuel cost.
+def _load_levelised_costs() -> Dict[str, float]:
+    """Load levelised costs per gigajoule for each technology.
 
     Returns
     -------
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
+
+    df = pd.read_csv(os.path.join("data", "tech_specs.csv"))
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
+
     data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
     df = pd.read_csv(data_path)
 
@@ -138,6 +132,7 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
     return levelised
 
 
+
 def run_all_scenarios(
     scenarios: List[str] | None = None, years: List[int] | None = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -162,6 +157,7 @@ def run_all_scenarios(
     os.makedirs("results", exist_ok=True)
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
+    tech_costs = _load_levelised_costs()
 
     for scenario in SCENARIOS:
         for year in YEARS:
@@ -176,8 +172,6 @@ def run_all_scenarios(
                 rural_hh = rural_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 if demand <= 0:
                     continue
-                # Compute levelised costs based on local household mix
-                tech_costs = _compute_levelised_costs(urban_hh, rural_hh)
                 # Derive energy shares for the district using the adoption model
                 _, energy_shares = get_tech_mix_by_scenario(
                     scenario,
