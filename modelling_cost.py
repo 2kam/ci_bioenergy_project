@@ -43,7 +43,27 @@ from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
+
+def _load_levelised_costs(
+    scenario: str | None = None, year: int | None = None
+) -> Dict[str, float]:
+  
+    """Load levelised cost data from ``data/tech_specs.csv``.
+
+    The CSV must contain ``Technology`` and ``Cost_per_GJ`` columns. If
+    optional ``Scenario`` or ``Year`` columns are present, this function
+    filters the table using the provided ``scenario`` and ``year``
+    parameters.
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Scenario name to filter on when a ``Scenario`` column exists.
+    year : int, optional
+        Year to filter on when a ``Year`` column exists.
+=======
 def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
+
     """Derive an approximate cost per gigajoule for each technology.
 
     Parameters
@@ -64,6 +84,16 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
+    data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
+    df = pd.read_csv(data_path)
+
+    if scenario is not None and "Scenario" in df.columns:
+        df = df[df["Scenario"] == scenario]
+    if year is not None and "Year" in df.columns:
+        df = df[df["Year"] == year]
+
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
+
     # CAPEX per household (USD) amortised over 15 years
     capex = {
         "firewood": 0,
@@ -111,6 +141,7 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
 def run_all_scenarios(
     scenarios: List[str] | None = None, years: List[int] | None = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
     """Execute the cost optimisation pipeline across all scenarios and years.
 
     Parameters
@@ -132,8 +163,13 @@ def run_all_scenarios(
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
 
+    for scenario in SCENARIOS:
+        for year in YEARS:
+            tech_costs: Dict[str, float] = _load_levelised_costs(scenario, year)
+            
     for scenario in scenarios:
         for year in years:
+
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
