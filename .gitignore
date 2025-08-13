@@ -1,6 +1,30 @@
-results/
-.DS_Store
-
+# Byte-compiled / optimized / dynamic Python files
 __pycache__/
 *.pyc
 
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+
+# Virtual environment directories
+venv/
+.env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE / editor directories
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Model results
+results/
