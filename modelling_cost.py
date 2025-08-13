@@ -31,7 +31,6 @@ from spatial_config import (
     demand_by_region_year,
     urban_hh_by_region_year,
     rural_hh_by_region_year,
-    URBAN_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
@@ -42,56 +41,37 @@ YEARS: List[int] = [2030, 2040, 2050]
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
-def _compute_levelised_costs() -> Dict[str, float]:
-    """Derive an approximate cost per gigajoule for each technology.
+def _load_levelised_costs(
+    scenario: str | None = None, year: int | None = None
+) -> Dict[str, float]:
+    """Load levelised cost data from ``data/tech_specs.csv``.
 
-    The original cost optimisation model separates capital expenditure
-    (CAPEX) and fuel costs. CAPEX is specified per household and
-    amortised over a 15‑year stove lifetime. To convert this to a
-    gigajoule basis, we assume an average urban household consumption
-    of ``URBAN_DEMAND_GJ_PER_HH`` GJ/year and use the amortisation
-    period. The resulting cost per GJ is the sum of the amortised
-    CAPEX and the fuel cost.
+    The CSV must contain ``Technology`` and ``Cost_per_GJ`` columns. If
+    optional ``Scenario`` or ``Year`` columns are present, this function
+    filters the table using the provided ``scenario`` and ``year``
+    parameters.
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Scenario name to filter on when a ``Scenario`` column exists.
+    year : int, optional
+        Year to filter on when a ``Year`` column exists.
 
     Returns
     -------
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
-    # CAPEX per household (USD) amortised over 15 years
-    capex = {
-        "firewood": 0,
-        "charcoal": 0,
-        "ics_firewood": 25,
-        "ics_charcoal": 30,
-        "biogas": 450,
-        "ethanol": 75,
-        "electricity": 100,
-        "lpg": 60,
-        "improved_biomass": 40,
-    }
-    # Fuel cost per GJ (USD)
-    fuel = {
-        "firewood": 2,
-        "charcoal": 6,
-        "ics_firewood": 2,
-        "ics_charcoal": 6,
-        "biogas": 1,
-        "ethanol": 15,
-        "electricity": 12,
-        "lpg": 10,
-        "improved_biomass": 4,
-    }
-    levelised: Dict[str, float] = {}
-    years_lifetime = 15
-    # Use average urban household demand to convert capex to USD/GJ
-    annual_energy_per_hh = URBAN_DEMAND_GJ_PER_HH
-    for tech in fuel.keys():
-        capex_per_gj = 0.0
-        if capex.get(tech, 0) > 0:
-            capex_per_gj = capex[tech] / (annual_energy_per_hh * years_lifetime)
-        levelised[tech] = fuel[tech] + capex_per_gj
-    return levelised
+    data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
+    df = pd.read_csv(data_path)
+
+    if scenario is not None and "Scenario" in df.columns:
+        df = df[df["Scenario"] == scenario]
+    if year is not None and "Year" in df.columns:
+        df = df[df["Year"] == year]
+
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
 
 
 def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -104,12 +84,12 @@ def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
         summary of total costs by scenario and year.
     """
     os.makedirs("results", exist_ok=True)
-    tech_costs: Dict[str, float] = _compute_levelised_costs()
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
 
     for scenario in SCENARIOS:
         for year in YEARS:
+            tech_costs: Dict[str, float] = _load_levelised_costs(scenario, year)
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
