@@ -32,6 +32,7 @@ from spatial_config import (
     urban_hh_by_region_year,
     rural_hh_by_region_year,
     URBAN_DEMAND_GJ_PER_HH,
+    RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
@@ -42,16 +43,21 @@ YEARS: List[int] = [2030, 2040, 2050]
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
-def _compute_levelised_costs() -> Dict[str, float]:
+def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
     """Derive an approximate cost per gigajoule for each technology.
+
+    Parameters
+    ----------
+    urban_hh, rural_hh : float
+        Number of urban and rural households in the region. These are
+        used to weight the assumed household cooking energy demand
+        (``URBAN_DEMAND_GJ_PER_HH`` and ``RURAL_DEMAND_GJ_PER_HH``)
+        when converting household CAPEX to a per‑gigajoule basis.
 
     The original cost optimisation model separates capital expenditure
     (CAPEX) and fuel costs. CAPEX is specified per household and
-    amortised over a 15‑year stove lifetime. To convert this to a
-    gigajoule basis, we assume an average urban household consumption
-    of ``URBAN_DEMAND_GJ_PER_HH`` GJ/year and use the amortisation
-    period. The resulting cost per GJ is the sum of the amortised
-    CAPEX and the fuel cost.
+    amortised over a 15‑year stove lifetime. The resulting cost per GJ
+    is the sum of the amortised CAPEX and the fuel cost.
 
     Returns
     -------
@@ -84,11 +90,19 @@ def _compute_levelised_costs() -> Dict[str, float]:
     }
     levelised: Dict[str, float] = {}
     years_lifetime = 15
-    # Use average urban household demand to convert capex to USD/GJ
-    annual_energy_per_hh = URBAN_DEMAND_GJ_PER_HH
+    # Compute average household demand weighted by urban/rural counts
+    total_hh = urban_hh + rural_hh
+    if total_hh > 0:
+        annual_energy_per_hh = (
+            (URBAN_DEMAND_GJ_PER_HH * urban_hh)
+            + (RURAL_DEMAND_GJ_PER_HH * rural_hh)
+        ) / total_hh
+    else:
+        # Fallback to simple mean if household data is unavailable
+        annual_energy_per_hh = (URBAN_DEMAND_GJ_PER_HH + RURAL_DEMAND_GJ_PER_HH) / 2
     for tech in fuel.keys():
         capex_per_gj = 0.0
-        if capex.get(tech, 0) > 0:
+        if capex.get(tech, 0) > 0 and annual_energy_per_hh > 0:
             capex_per_gj = capex[tech] / (annual_energy_per_hh * years_lifetime)
         levelised[tech] = fuel[tech] + capex_per_gj
     return levelised
@@ -104,7 +118,6 @@ def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
         summary of total costs by scenario and year.
     """
     os.makedirs("results", exist_ok=True)
-    tech_costs: Dict[str, float] = _compute_levelised_costs()
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
 
@@ -116,6 +129,8 @@ def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
                 rural_hh = rural_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 if demand <= 0:
                     continue
+                # Compute levelised costs based on local household mix
+                tech_costs = _compute_levelised_costs(urban_hh, rural_hh)
                 # Derive energy shares for the district using the adoption model
                 _, energy_shares = get_tech_mix_by_scenario(
                     scenario,
