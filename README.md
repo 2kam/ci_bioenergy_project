@@ -34,6 +34,17 @@ with underscores.
 
 ## Running the models
 
+The `main.py` script acts as a dispatcher and must be provided with a
+`pipeline` argument, either `stockflow` or `cost`. Run it with the
+following format:
+
+```bash
+python main.py <pipeline>
+```
+
+The script automatically creates a `results/` directory where outputs
+are stored.
+
 1. **Clone or download the repository** and navigate to its root
    directory.
 
@@ -102,3 +113,12 @@ incorporates fixes for parameter drift, unified technology lists and
 scenario name normalisation and reads all household projections from a
 single CSV. The readme provides a step‑by‑step guide to running both
 models and verifying the outputs.
+
+## Author
+
+Created by [2kam](https://github.com/2kam).
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE) for details.
+

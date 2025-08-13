@@ -1,6 +1,9 @@
 """
 Entry point for the CI bioenergy modelling suite.
 
+Author: 2kam
+License: MIT
+
 This script acts as a dispatcher between the stock‑flow and cost
 analysis pipelines. Invoke it with a single positional argument
 specifying which pipeline to run. For example::

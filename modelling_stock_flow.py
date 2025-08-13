@@ -1,6 +1,9 @@
 """
 Stock-flow modelling pipeline for the CI bioenergy project.
 
+Author: 2kam
+License: MIT
+
 This module orchestrates a high‑level simulation of future clean
 cooking demand and associated greenhouse gas emissions across Côte
 d'Ivoire. It follows the stock‑and‑flow philosophy, projecting
