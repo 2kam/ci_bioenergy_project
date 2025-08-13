@@ -36,11 +36,7 @@ from population_urbanization_model import calculate_population_urbanization
 from energy_demand_model import project_household_energy_demand
 from technology_adoption_model import get_tech_mix_by_scenario
 from ghg_emissions_model import calculate_emissions
-
-# Scenarios to evaluate
-SCENARIOS: List[str] = ["bau", "clean_push", "biogas_incentive"]
-# Model years
-YEARS: List[int] = [2030, 2040, 2050]
+from config import SCENARIOS, YEARS
 
 
 def _map_energy_categories(energy_by_tech: Dict[str, float]) -> Dict[str, float]:
