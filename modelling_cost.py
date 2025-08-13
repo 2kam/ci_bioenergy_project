@@ -34,14 +34,13 @@ from spatial_config import (
     demand_by_region_year,
     urban_hh_by_region_year,
     rural_hh_by_region_year,
-    URBAN_DEMAND_GJ_PER_HH,
-    RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
 from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
+
 
 
 def _load_levelised_costs(scenario: str, year: int) -> Dict[str, float]:
@@ -106,24 +105,53 @@ def _load_levelised_costs(scenario: str, year: int) -> Dict[str, float]:
 def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
     """Derive an approximate cost per gigajoule for each technology.
 
+
+def _load_levelised_costs(
+    scenario: str | None = None, year: int | None = None
+) -> Dict[str, float]:
+  
+    """Load levelised cost data from ``data/tech_specs.csv``.
+
+    The CSV must contain ``Technology`` and ``Cost_per_GJ`` columns. If
+    optional ``Scenario`` or ``Year`` columns are present, this function
+    filters the table using the provided ``scenario`` and ``year``
+    parameters.
+
+
     Parameters
     ----------
-    urban_hh, rural_hh : float
-        Number of urban and rural households in the region. These are
-        used to weight the assumed household cooking energy demand
-        (``URBAN_DEMAND_GJ_PER_HH`` and ``RURAL_DEMAND_GJ_PER_HH``)
-        when converting household CAPEX to a per‑gigajoule basis.
+    scenario : str, optional
+        Scenario name to filter on when a ``Scenario`` column exists.
+    year : int, optional
+        Year to filter on when a ``Year`` column exists.
 
-    The original cost optimisation model separates capital expenditure
-    (CAPEX) and fuel costs. CAPEX is specified per household and
-    amortised over a 15‑year stove lifetime. The resulting cost per GJ
-    is the sum of the amortised CAPEX and the fuel cost.
+def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
+
+    """Derive an approximate cost per gigajoule for each technology.
+
+
+def _load_levelised_costs() -> Dict[str, float]:
+    """Load levelised costs per gigajoule for each technology.
 
     Returns
     -------
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
+
+    df = pd.read_csv(os.path.join("data", "tech_specs.csv"))
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
+
+    data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
+    df = pd.read_csv(data_path)
+
+    if scenario is not None and "Scenario" in df.columns:
+        df = df[df["Scenario"] == scenario]
+    if year is not None and "Year" in df.columns:
+        df = df[df["Year"] == year]
+
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
+
     # CAPEX per household (USD) amortised over 15 years
     capex = {
         "firewood": 0,
@@ -168,9 +196,11 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
     return levelised
 
 
+
 def run_all_scenarios(
     scenarios: List[str] | None = None, years: List[int] | None = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
     """Execute the cost optimisation pipeline across all scenarios and years.
 
     Parameters
@@ -191,10 +221,19 @@ def run_all_scenarios(
     os.makedirs("results", exist_ok=True)
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
+    tech_costs = _load_levelised_costs()
 
+    for scenario in SCENARIOS:
+        for year in YEARS:
+            tech_costs: Dict[str, float] = _load_levelised_costs(scenario, year)
+            
     for scenario in scenarios:
         for year in years:
+
             tech_costs = _load_levelised_costs(scenario, year)
+
+
+
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
