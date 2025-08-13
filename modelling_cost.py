@@ -1,6 +1,9 @@
 """
 Cost optimisation pipeline for the CI bioenergy project.
 
+Author: 2kam
+License: MIT
+
 This module performs a simplified least‑cost analysis of clean cooking
 technology pathways at the district level. For each scenario and year,
 it allocates regional cooking energy demand across the available
