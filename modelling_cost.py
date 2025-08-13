@@ -35,10 +35,7 @@ from spatial_config import (
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
-
-# Scenarios and years to evaluate
-SCENARIOS: List[str] = ["bau", "clean_push", "biogas_incentive"]
-YEARS: List[int] = [2030, 2040, 2050]
+from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
@@ -94,8 +91,17 @@ def _compute_levelised_costs() -> Dict[str, float]:
     return levelised
 
 
-def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
+def run_all_scenarios(
+    scenarios: List[str] | None = None, years: List[int] | None = None
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Execute the cost optimisation pipeline across all scenarios and years.
+
+    Parameters
+    ----------
+    scenarios : list, optional
+        Scenario names to evaluate. Defaults to :data:`config.SCENARIOS`.
+    years : list, optional
+        Model years to process. Defaults to :data:`config.YEARS`.
 
     Returns
     -------
@@ -103,13 +109,15 @@ def run_all_scenarios() -> Tuple[pd.DataFrame, pd.DataFrame]:
         A tuple containing the detailed results for each region and the
         summary of total costs by scenario and year.
     """
+    scenarios = scenarios or SCENARIOS
+    years = years or YEARS
     os.makedirs("results", exist_ok=True)
     tech_costs: Dict[str, float] = _compute_levelised_costs()
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
 
-    for scenario in SCENARIOS:
-        for year in YEARS:
+    for scenario in scenarios:
+        for year in years:
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)

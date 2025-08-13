@@ -22,6 +22,7 @@ import os
 
 import modelling_stock_flow as msf
 import modelling_cost as mc
+from config import SCENARIOS, YEARS
 
 
 def main() -> None:
@@ -34,15 +35,28 @@ def main() -> None:
         choices=["stockflow", "cost"],
         help="Select which modelling pipeline to run: 'stockflow' or 'cost'.",
     )
+    parser.add_argument(
+        "--scenarios",
+        nargs="+",
+        default=SCENARIOS,
+        help="Scenarios to evaluate. Defaults to all configured scenarios.",
+    )
+    parser.add_argument(
+        "--years",
+        nargs="+",
+        type=int,
+        default=YEARS,
+        help="Model years to evaluate. Defaults to all configured years.",
+    )
     args = parser.parse_args()
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
-        msf.run_all_scenarios()
+        msf.run_all_scenarios(args.scenarios, args.years)
         print(
             "✔ Stock‑flow scenarios have been generated and saved to the results directory."
         )
     elif args.pipeline == "cost":
-        mc.run_all_scenarios()
+        mc.run_all_scenarios(args.scenarios, args.years)
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."
         )
