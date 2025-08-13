@@ -31,13 +31,12 @@ from spatial_config import (
     demand_by_region_year,
     urban_hh_by_region_year,
     rural_hh_by_region_year,
+    URBAN_DEMAND_GJ_PER_HH,
+    RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
-
-# Scenarios and years to evaluate
-SCENARIOS: List[str] = ["bau", "clean_push", "biogas_incentive"]
-YEARS: List[int] = [2030, 2040, 2050]
+from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
