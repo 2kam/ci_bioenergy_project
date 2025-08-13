@@ -1,6 +1,9 @@
 """
 Stock-flow modelling pipeline for the CI bioenergy project.
 
+Author: 2kam
+License: MIT
+
 This module orchestrates a high‑level simulation of future clean
 cooking demand and associated greenhouse gas emissions across Côte
 d'Ivoire. It follows the stock‑and‑flow philosophy, projecting
@@ -84,8 +87,17 @@ def _map_energy_categories(energy_by_tech: Dict[str, float]) -> Dict[str, float]
     return mapped
 
 
-def run_all_scenarios() -> Dict[str, pd.DataFrame]:
+def run_all_scenarios(
+    scenarios: List[str] | None = None, years: List[int] | None = None
+) -> Dict[str, pd.DataFrame]:
     """Execute all stock‑flow scenarios and write results to Excel.
+
+    Parameters
+    ----------
+    scenarios : list, optional
+        Scenario names to evaluate. Defaults to :data:`config.SCENARIOS`.
+    years : list, optional
+        Model years to process. Defaults to :data:`config.YEARS`.
 
     Returns
     -------
@@ -95,15 +107,17 @@ def run_all_scenarios() -> Dict[str, pd.DataFrame]:
         energy demand, energy allocation by technology and detailed
         emission estimates.
     """
+    scenarios = scenarios or SCENARIOS
+    years = years or YEARS
     params = get_parameters()
     os.makedirs("results", exist_ok=True)
     results_per_scenario: Dict[str, pd.DataFrame] = {}
 
-    for scenario in SCENARIOS:
+    for scenario in scenarios:
         scenario_results: List[Dict[str, float]] = []
         # Initialize grid emission factor CO₂; update each year
         grid_ef_CO2 = params["grid_emission_factor_CO2_kg_kWh"]
-        for year in YEARS:
+        for year in years:
             # Project demographics
             pop = calculate_population_urbanization(
                 year,
@@ -133,7 +147,7 @@ def run_all_scenarios() -> Dict[str, pd.DataFrame]:
             energy_by_fuel = _map_energy_categories(energy_by_tech)
             # Apply grid decarbonisation: update the grid emission factor
             # for the current year before calculating emissions
-            if year != YEARS[0]:
+            if year != years[0]:
                 grid_ef_CO2 *= (1 - params["grid_decarbonization_rate_annual"])
             # Compute emissions
             emissions = calculate_emissions(energy_by_fuel, params, grid_ef_CO2)
