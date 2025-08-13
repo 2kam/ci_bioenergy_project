@@ -34,89 +34,25 @@ from spatial_config import (
     demand_by_region_year,
     urban_hh_by_region_year,
     rural_hh_by_region_year,
+    URBAN_DEMAND_GJ_PER_HH,
+    RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix
 from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
-
-
-
-def _load_levelised_costs(scenario: str, year: int) -> Dict[str, float]:
-    """Load or derive levelised costs for a scenario-year pair.
-
-    Parameters
-    ----------
-    scenario : str
-        Scenario name. Currently unused but retained for a stable API.
-    year : int
-        Model year. Currently unused but retained for a stable API.
-
-    Returns
-    -------
-    dict
-        Mapping of technology names to levelised cost per GJ (USD/GJ).
-
-    Notes
-    -----
-    The costs are presently static and do not vary by scenario or year.
-    They mirror the assumptions used in :func:`_compute_levelised_costs`
-    but avoid recomputing the values for every region.
-    """
-
-    capex = {
-        "firewood": 0,
-        "charcoal": 0,
-        "ics_firewood": 25,
-        "ics_charcoal": 30,
-        "biogas": 450,
-        "ethanol": 75,
-        "electricity": 100,
-        "lpg": 60,
-        "improved_biomass": 40,
-    }
-    fuel = {
-        "firewood": 2,
-        "charcoal": 6,
-        "ics_firewood": 2,
-        "ics_charcoal": 6,
-        "biogas": 1,
-        "ethanol": 15,
-        "electricity": 12,
-        "lpg": 10,
-        "improved_biomass": 4,
-    }
-
-    years_lifetime = 15
-    annual_energy_per_hh = (
-        URBAN_DEMAND_GJ_PER_HH + RURAL_DEMAND_GJ_PER_HH
-    ) / 2
-
-    levelised: Dict[str, float] = {}
-    for tech in fuel:
-        capex_per_gj = 0.0
-        if capex.get(tech, 0) > 0:
-            capex_per_gj = capex[tech] / (annual_energy_per_hh * years_lifetime)
-        levelised[tech] = fuel[tech] + capex_per_gj
-
-    return levelised
-
-def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
-    """Derive an approximate cost per gigajoule for each technology.
-
+ 
 
 def _load_levelised_costs(
     scenario: str | None = None, year: int | None = None
 ) -> Dict[str, float]:
-  
     """Load levelised cost data from ``data/tech_specs.csv``.
 
     The CSV must contain ``Technology`` and ``Cost_per_GJ`` columns. If
     optional ``Scenario`` or ``Year`` columns are present, this function
     filters the table using the provided ``scenario`` and ``year``
     parameters.
-
 
     Parameters
     ----------
@@ -125,23 +61,11 @@ def _load_levelised_costs(
     year : int, optional
         Year to filter on when a ``Year`` column exists.
 
-def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
-
-    """Derive an approximate cost per gigajoule for each technology.
-
-
-def _load_levelised_costs() -> Dict[str, float]:
-    """Load levelised costs per gigajoule for each technology.
-
     Returns
     -------
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
-
-    df = pd.read_csv(os.path.join("data", "tech_specs.csv"))
-    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
-
     data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
     df = pd.read_csv(data_path)
 
@@ -152,6 +76,27 @@ def _load_levelised_costs() -> Dict[str, float]:
 
     return dict(zip(df["Technology"], df["Cost_per_GJ"]))
 
+
+def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
+    """Derive an approximate cost per gigajoule for each technology.
+
+    Parameters
+    ----------
+    urban_hh : float
+        Number of urban households.
+    rural_hh : float
+        Number of rural households.
+
+    Returns
+    -------
+    dict
+        Mapping of technology names to levelised cost per GJ (USD/GJ).
+
+    Notes
+    -----
+    CAPEX per household (USD) is amortised over 15 years and combined with
+    fuel costs to estimate a levelised cost per gigajoule.
+    """
     # CAPEX per household (USD) amortised over 15 years
     capex = {
         "firewood": 0,
@@ -178,6 +123,7 @@ def _load_levelised_costs() -> Dict[str, float]:
     }
     levelised: Dict[str, float] = {}
     years_lifetime = 15
+
     # Compute average household demand weighted by urban/rural counts
     total_hh = urban_hh + rural_hh
     if total_hh > 0:
@@ -188,11 +134,13 @@ def _load_levelised_costs() -> Dict[str, float]:
     else:
         # Fallback to simple mean if household data is unavailable
         annual_energy_per_hh = (URBAN_DEMAND_GJ_PER_HH + RURAL_DEMAND_GJ_PER_HH) / 2
-    for tech in fuel.keys():
+
+    for tech in fuel:
         capex_per_gj = 0.0
         if capex.get(tech, 0) > 0 and annual_energy_per_hh > 0:
             capex_per_gj = capex[tech] / (annual_energy_per_hh * years_lifetime)
         levelised[tech] = fuel[tech] + capex_per_gj
+
     return levelised
 
 
