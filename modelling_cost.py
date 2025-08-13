@@ -43,6 +43,66 @@ from config import SCENARIOS, YEARS
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
 
+
+def _load_levelised_costs(scenario: str, year: int) -> Dict[str, float]:
+    """Load or derive levelised costs for a scenario-year pair.
+
+    Parameters
+    ----------
+    scenario : str
+        Scenario name. Currently unused but retained for a stable API.
+    year : int
+        Model year. Currently unused but retained for a stable API.
+
+    Returns
+    -------
+    dict
+        Mapping of technology names to levelised cost per GJ (USD/GJ).
+
+    Notes
+    -----
+    The costs are presently static and do not vary by scenario or year.
+    They mirror the assumptions used in :func:`_compute_levelised_costs`
+    but avoid recomputing the values for every region.
+    """
+
+    capex = {
+        "firewood": 0,
+        "charcoal": 0,
+        "ics_firewood": 25,
+        "ics_charcoal": 30,
+        "biogas": 450,
+        "ethanol": 75,
+        "electricity": 100,
+        "lpg": 60,
+        "improved_biomass": 40,
+    }
+    fuel = {
+        "firewood": 2,
+        "charcoal": 6,
+        "ics_firewood": 2,
+        "ics_charcoal": 6,
+        "biogas": 1,
+        "ethanol": 15,
+        "electricity": 12,
+        "lpg": 10,
+        "improved_biomass": 4,
+    }
+
+    years_lifetime = 15
+    annual_energy_per_hh = (
+        URBAN_DEMAND_GJ_PER_HH + RURAL_DEMAND_GJ_PER_HH
+    ) / 2
+
+    levelised: Dict[str, float] = {}
+    for tech in fuel:
+        capex_per_gj = 0.0
+        if capex.get(tech, 0) > 0:
+            capex_per_gj = capex[tech] / (annual_energy_per_hh * years_lifetime)
+        levelised[tech] = fuel[tech] + capex_per_gj
+
+    return levelised
+
 def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, float]:
     """Derive an approximate cost per gigajoule for each technology.
 
@@ -134,14 +194,13 @@ def run_all_scenarios(
 
     for scenario in scenarios:
         for year in years:
+            tech_costs = _load_levelised_costs(scenario, year)
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 rural_hh = rural_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 if demand <= 0:
                     continue
-                # Compute levelised costs based on local household mix
-                tech_costs = _compute_levelised_costs(urban_hh, rural_hh)
                 # Derive energy shares for the district using the adoption model
                 _, energy_shares = get_tech_mix_by_scenario(
                     scenario,
