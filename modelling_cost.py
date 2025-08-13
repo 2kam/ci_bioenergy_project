@@ -60,6 +60,9 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
 
     Returns
     -------
+
+    Dict[str, float]
+
     dict
         Mapping of technology names to levelised cost per GJ (USD/GJ).
     """
@@ -122,13 +125,22 @@ def _load_levelised_costs(
     Returns
     -------
     dict
+
         Mapping of technology names to levelised cost per GJ (USD/GJ).
 
     Notes
     -----
+
+    CAPEX per household (USD) is amortised over 15 years and combined with
+    fuel costs to estimate a levelised cost per gigajoule. The average
+    annual energy demand per household is weighted by
+    :data:`URBAN_DEMAND_GJ_PER_HH` and :data:`RURAL_DEMAND_GJ_PER_HH` based
+    on the supplied household counts.
+
     If ``data/tech_specs.csv`` is unavailable, approximate costs are
     computed using :func:`_compute_levelised_costs` based on the total
     number of urban and rural households for the specified year.
+
     """
     data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
     if os.path.exists(data_path):
@@ -171,13 +183,13 @@ def run_all_scenarios(
     summary_rows: List[Dict[str, float]] = []
     for scenario in scenarios:
         for year in years:
-            tech_costs = _load_levelised_costs(scenario, year)
             for reg in regions:
                 demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 rural_hh = rural_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 if demand <= 0:
                     continue
+                tech_costs = _compute_levelised_costs(urban_hh, rural_hh)
                 # Derive energy shares for the district using the adoption model
                 _, energy_shares = get_tech_mix_by_scenario(
                     scenario,
