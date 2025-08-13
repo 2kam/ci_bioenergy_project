@@ -16,7 +16,7 @@ SCENARIOS: List[str] = ["bau", "clean_push", "biogas_incentive"]
 
 # Model years
 YEARS: List[int] = [2030, 2040, 2050]
-=======
+
 # Default scenario names evaluated by the modelling pipelines
 SCENARIOS: List[str] = ["bau", "clean_push", "biogas_incentive"]
 
