@@ -43,7 +43,9 @@ python main.py <pipeline>
 ```
 
 The script automatically creates a `results/` directory where outputs
-are stored.
+are stored. This folder is excluded from version control; regenerate the
+Excel files using the commands below and store any published results
+outside the repository (e.g. in a release asset or shared drive).
 
 1. **Clone or download the repository** and navigate to its root
    directory.
