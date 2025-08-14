@@ -32,6 +32,20 @@ with underscores.
   require PuLP. If you wish to run the `run_cost_minimise_cost` function
   in `model.py`, install PuLP via `pip install pulp`.
 
+## Preparing ERA5 weather cutouts
+
+Some analyses rely on hourly weather variables from the ERA5 reanalysis.
+Use the helper script below to download a small cutout for a given
+bounding box and range of years.  The data are stored as NetCDF files in
+`data/era5/` and can be loaded by `era5_profiles.py`.
+
+```bash
+python scripts/prepare_era5_cutout.py --bbox <min_lon> <min_lat> <max_lon> <max_lat> --start-year 2018 --end-year 2019
+```
+
+The command above downloads temperature, wind and solar influx for the
+specified region and saves them to `data/era5/era5_2018-2019.nc`.
+
 ## Running the models
 
 The `main.py` script acts as a dispatcher and must be provided with a
