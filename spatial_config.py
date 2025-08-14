@@ -42,3 +42,45 @@ def compute_urban_rural_hh_by_region_year():
 # Precompute values for use in optimization and adoption models
 demand_by_region_year = compute_demand_by_region_year()
 urban_hh_by_region_year, rural_hh_by_region_year = compute_urban_rural_hh_by_region_year()
+
+
+def generate_buses_csv(output_path: str = os.path.join("results", "buses.csv")) -> pd.DataFrame:
+    """Create a buses table with node metadata.
+
+    The table contains one row per region and year with the number of
+    urban and rural households. It is stored at ``results/buses.csv`` by
+    default so that other modules (e.g. PyPSA export utilities) can join
+    against it.
+
+    Parameters
+    ----------
+    output_path : str, optional
+        Location where the CSV should be written. Defaults to
+        ``results/buses.csv``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame containing the bus metadata.
+    """
+
+    rows = []
+    for year, regions_dict in urban_hh_by_region_year.items():
+        for region, urban_hh in regions_dict.items():
+            rows.append(
+                {
+                    "region": region,
+                    "year": year,
+                    "urban_hh": urban_hh,
+                    "rural_hh": rural_hh_by_region_year[year][region],
+                }
+            )
+    buses_df = pd.DataFrame(rows).sort_values(["region", "year"])
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    buses_df.to_csv(output_path, index=False)
+    return buses_df
+
+
+# Generate buses.csv on import so downstream modules can rely on it
+buses_df = generate_buses_csv()
+
