@@ -85,6 +85,19 @@ outside the repository (e.g. in a release asset or shared drive).
    minimum clean share and maximum firewood share are taken from
    `config.py`.
 
+   Append ``--pypsa-export`` to additionally produce CSV files
+   compatible with `PyPSA‑Earth <https://pypsa-earth.readthedocs.io/>`_:
+
+   ```bash
+   python main.py cost --pypsa-export
+   ```
+
+   For each scenario and year, the command writes
+   ``results/pypsa/<scenario>/<year>/load.csv`` and
+   ``generators.csv``. ``load.csv`` contains regional
+   cooking‑electricity demand while ``generators.csv`` provides
+   dispatchable biomass, biogas and LPG supply.
+
 5. **Inspect the outputs** using your preferred spreadsheet
    application. For example, the stock–flow model can be checked to
    verify that total demand for 2030 is nearly identical across
@@ -106,6 +119,21 @@ python results/aggregate_techpathways.py
 This generates `techpathways_all.csv` and
 `techpathways_summary_all.csv` in the same folder.
 
+## Exporting to PyPSA‑Earth
+
+The CSVs generated with ``--pypsa-export`` can be referenced from a
+PyPSA‑Earth configuration to include clean‑cooking demand and fuel
+supplies. Example snippet:
+
+```yaml
+custom_data:
+  load: results/pypsa/bau/2030/load.csv
+  generators: results/pypsa/bau/2030/generators.csv
+```
+
+Adjust the paths, scenario (``bau``) and year (``2030``) as needed for
+your analysis.
+
 ## Supply and demand comparison
 
 Estimate the cooking energy demand for future targets and compare it
@@ -119,6 +147,39 @@ The script scales 2023 district‑level demand by predefined multipliers
 (`TARGET_MULTIPLIERS`) for 2030, 2040 and 2050, joins the values with
 `regional_supply_full_corrected.csv` and reports the surplus or deficit
 per district. Results are written to `results/supply_demand_<year>.csv`.
+
+## Hourly demand with ERA5
+
+Hourly demand profiles can be derived from ERA5 reanalysis data. Use
+[atlite](https://github.com/PyPSA/atlite) to prepare a cutout covering
+Côte d'Ivoire and store the resulting NetCDF file under
+``data/era5/``::
+
+    import atlite
+    cutout = atlite.Cutout(
+        path="data/era5/civ-2019.nc",
+        module="era5",
+        x=slice(-8.5, -2.5),
+        y=slice(4, 11),
+        time="2019",
+    )
+    cutout.write()
+
+The :mod:`era5_profiles` module loads these cutouts and exposes
+:func:`era5_profiles.load_era5_series` for extracting hourly variables.
+Annual demand values can be distributed to an hourly series by weighting
+with the ERA5-derived profile::
+
+    from energy_demand_model import disaggregate_to_hourly
+    hourly = disaggregate_to_hourly(
+        annual_gj,
+        "data/era5/civ-2019.nc",
+        "t2m",
+        region_geom,
+    )
+
+The returned series contains hourly demand in gigajoules indexed by
+UTC timestamps.
 
 ## Reproducibility notes
 
