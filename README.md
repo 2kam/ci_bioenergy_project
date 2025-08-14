@@ -83,6 +83,19 @@ outside the repository (e.g. in a release asset or shared drive).
    technology and a `Summary` sheet with total costs by scenario and
    year.
 
+   Append ``--pypsa-export`` to additionally produce CSV files
+   compatible with `PyPSA‑Earth <https://pypsa-earth.readthedocs.io/>`_:
+
+   ```bash
+   python main.py cost --pypsa-export
+   ```
+
+   For each scenario and year, the command writes
+   ``results/pypsa/<scenario>/<year>/load.csv`` and
+   ``generators.csv``. ``load.csv`` contains regional
+   cooking‑electricity demand while ``generators.csv`` provides
+   dispatchable biomass, biogas and LPG supply.
+
 5. **Inspect the outputs** using your preferred spreadsheet
    application. For example, the stock–flow model can be checked to
    verify that total demand for 2030 is nearly identical across
@@ -103,6 +116,21 @@ python results/aggregate_techpathways.py
 
 This generates `techpathways_all.csv` and
 `techpathways_summary_all.csv` in the same folder.
+
+## Exporting to PyPSA‑Earth
+
+The CSVs generated with ``--pypsa-export`` can be referenced from a
+PyPSA‑Earth configuration to include clean‑cooking demand and fuel
+supplies. Example snippet:
+
+```yaml
+custom_data:
+  load: results/pypsa/bau/2030/load.csv
+  generators: results/pypsa/bau/2030/generators.csv
+```
+
+Adjust the paths, scenario (``bau``) and year (``2030``) as needed for
+your analysis.
 
 ## Supply and demand comparison
 
