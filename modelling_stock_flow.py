@@ -19,7 +19,9 @@ Scenarios are defined in ``SCENARIOS`` and currently include:
 * ``biogas_incentive`` – strong incentives for biogas systems
 
 The results are written to an Excel workbook at
-``results/ci_bioenergy_scenarios.xlsx`` with a sheet per scenario.
+``results/ci_bioenergy_scenarios.xlsx`` with a sheet per scenario and
+to individual CSV files under ``results/stockflow_<scenario>.csv`` for
+easy downstream use.
 
 Example usage::
 
@@ -90,7 +92,7 @@ def _map_energy_categories(energy_by_tech: Dict[str, float]) -> Dict[str, float]
 def run_all_scenarios(
     scenarios: List[str] | None = None, years: List[int] | None = None
 ) -> Dict[str, pd.DataFrame]:
-    """Execute all stock‑flow scenarios and write results to Excel.
+    """Execute all stock‑flow scenarios and write results to Excel and CSV.
 
     Parameters
     ----------
@@ -167,9 +169,11 @@ def run_all_scenarios(
         # Convert to DataFrame
         results_per_scenario[scenario] = pd.DataFrame(scenario_results)
 
-    # Write results to Excel workbook
+    # Write results to Excel workbook and per-scenario CSVs
     output_path = "results/ci_bioenergy_scenarios.xlsx"
     with pd.ExcelWriter(output_path) as writer:
         for scenario, df in results_per_scenario.items():
             df.to_excel(writer, sheet_name=scenario, index=False)
+            csv_path = os.path.join("results", f"stockflow_{scenario}.csv")
+            df.to_csv(csv_path, index=False)
     return results_per_scenario

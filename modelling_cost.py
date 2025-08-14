@@ -14,7 +14,9 @@ costs.
 
 The resulting detailed and summary outputs are written to
 ``results/ci_bioenergy_techpathways.xlsx`` with two sheets: ``Details``
-and ``Summary``.
+and ``Summary``. Additionally, scenario‑specific CSV files are produced
+under ``results/techpathways_<scenario>.csv`` and
+``results/techpathways_summary_<scenario>.csv``.
 
 Example usage::
 
@@ -163,6 +165,9 @@ def run_all_scenarios(
 
     """Execute the cost optimisation pipeline across all scenarios and years.
 
+    The function writes results to an Excel workbook and scenario-specific
+    CSV files for easier analysis.
+
     Parameters
     ----------
     scenarios : list, optional
@@ -225,10 +230,21 @@ def run_all_scenarios(
     # Combine results into DataFrames
     df_full = pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
     df_summary = pd.DataFrame(summary_rows)
-    # Write outputs to Excel
+    # Write outputs to Excel and per-scenario CSVs
     output_path = "results/ci_bioenergy_techpathways.xlsx"
     with pd.ExcelWriter(output_path) as writer:
         if not df_full.empty:
             df_full.to_excel(writer, sheet_name="Details", index=False)
         df_summary.to_excel(writer, sheet_name="Summary", index=False)
+
+    if not df_full.empty:
+        for scenario in scenarios:
+            df_full[df_full["Scenario"] == scenario].to_csv(
+                os.path.join("results", f"techpathways_{scenario}.csv"),
+                index=False,
+            )
+            df_summary[df_summary["Scenario"] == scenario].to_csv(
+                os.path.join("results", f"techpathways_summary_{scenario}.csv"),
+                index=False,
+            )
     return df_full, df_summary
