@@ -27,4 +27,5 @@ dist/
 *.tmp
 
 # Model results
-results/
+results/*
+!results/.gitignore
