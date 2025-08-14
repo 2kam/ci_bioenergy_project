@@ -27,4 +27,9 @@ dist/
 *.tmp
 
 # Model results
-results/
+results/*
+
+!results/.gitignore
+
+!results/aggregate_techpathways.py
+

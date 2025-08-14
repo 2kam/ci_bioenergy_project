@@ -89,6 +89,35 @@ outside the repository (e.g. in a release asset or shared drive).
    scenarios (within ~1 %), technology lists match in both models and
    scenario names appear in lowercase.
 
+## Aggregating technology pathway results
+
+Running the cost analysis for multiple scenarios produces per‑scenario
+CSV files in the `results/` directory (e.g.
+`techpathways_<scenario>.csv` and `techpathways_summary_<scenario>.csv`).
+Combine these into consolidated tables with a `Scenario` column by
+running:
+
+```bash
+python results/aggregate_techpathways.py
+```
+
+This generates `techpathways_all.csv` and
+`techpathways_summary_all.csv` in the same folder.
+
+## Supply and demand comparison
+
+Estimate the cooking energy demand for future targets and compare it
+with available biomass supply using:
+
+```bash
+python analysis/compare_supply_demand.py --target-year 2030
+```
+
+The script scales 2023 district‑level demand by predefined multipliers
+(`TARGET_MULTIPLIERS`) for 2030, 2040 and 2050, joins the values with
+`regional_supply_full_corrected.csv` and reports the surplus or deficit
+per district. Results are written to `results/supply_demand_<year>.csv`.
+
 ## Reproducibility notes
 
 * Both pipelines read the same demographic data file stored in the
