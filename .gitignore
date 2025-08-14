@@ -28,4 +28,8 @@ dist/
 
 # Model results
 results/*
+
+!results/.gitignore
+
 !results/aggregate_techpathways.py
+
