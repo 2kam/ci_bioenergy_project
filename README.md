@@ -104,6 +104,20 @@ python results/aggregate_techpathways.py
 This generates `techpathways_all.csv` and
 `techpathways_summary_all.csv` in the same folder.
 
+## Supply and demand comparison
+
+Estimate the cooking energy demand for future targets and compare it
+with available biomass supply using:
+
+```bash
+python analysis/compare_supply_demand.py --target-year 2030
+```
+
+The script scales 2023 district‑level demand by predefined multipliers
+(`TARGET_MULTIPLIERS`) for 2030, 2040 and 2050, joins the values with
+`regional_supply_full_corrected.csv` and reports the surplus or deficit
+per district. Results are written to `results/supply_demand_<year>.csv`.
+
 ## Reproducibility notes
 
 * Both pipelines read the same demographic data file stored in the
