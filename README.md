@@ -148,6 +148,30 @@ The script scales 2023 district‑level demand by predefined multipliers
 `regional_supply_full_corrected.csv` and reports the surplus or deficit
 per district. Results are written to `results/supply_demand_<year>.csv`.
 
+## Adoption metrics and PyPSA integration
+
+Running the stock–flow pipeline writes two supplementary tables used for
+spatial analyses and PyPSA‑Earth:
+
+* `results/buses.csv` – node metadata with `region`, `year`, `urban_hh` and
+  `rural_hh` columns.
+* `results/adoption_<scenario>.csv` – technology adoption shares and
+  delivered energy by region and year.
+
+Join these tables on `region` and `year` to annotate PyPSA buses. The
+`pypsa_export` helper attaches the data directly to a loaded PyPSA
+`Network`:
+
+```python
+import pypsa
+import pypsa_export as pe
+n = pypsa.Network("path/to/network.nc")
+pe.attach_adoption_data(n, "bau", 2030)
+```
+
+The merged `network.buses` DataFrame then includes household counts and
+adoption metrics for downstream energy system analyses.
+
 ## Hourly demand with ERA5
 
 Hourly demand profiles can be derived from ERA5 reanalysis data. Use

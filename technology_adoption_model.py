@@ -1,4 +1,6 @@
 import os
+from typing import List, Tuple
+
 import pandas as pd
 
 # Load household projections once
@@ -82,7 +84,47 @@ base_shares = {
     }
 }
 
-def get_tech_mix_by_scenario(scenario, year, district, params, demand, urban_hh, rural_hh, prev_shares):
+def get_tech_mix_by_scenario(
+    scenario: str,
+    year: int,
+    district: str,
+    params: dict,
+    demand: float,
+    urban_hh: float,
+    rural_hh: float,
+    prev_shares: dict,
+) -> Tuple[pd.DataFrame, dict]:
+    """Return technology adoption shares and energy by technology.
+
+    Parameters
+    ----------
+    scenario : str
+        Scenario name.
+    year : int
+        Evaluation year.
+    district : str
+        Region for which to compute the mix.
+    params : dict
+        Model parameters (unused, maintained for backward compatibility).
+    demand : float
+        Total cooking energy demand for the region and year in GJ.
+    urban_hh : float
+        Number of urban households (used if the projection table lacks the
+        region/year combination).
+    rural_hh : float
+        Number of rural households (used if the projection table lacks the
+        region/year combination).
+    prev_shares : dict
+        Previous year shares (unused but retained for compatibility).
+
+    Returns
+    -------
+    tuple
+        ``(df, energy_by_tech)`` where ``df`` is indexed by ``region`` and
+        ``year`` with columns ``technology``, ``share`` and ``energy_GJ``.
+        ``energy_by_tech`` is a simple mapping used by legacy code paths.
+    """
+
     # normalise scenario name: lower-case and replace spaces with underscores
     scenario_key = scenario.lower().replace(" ", "_")
     if scenario_key not in base_shares:
@@ -95,14 +137,72 @@ def get_tech_mix_by_scenario(scenario, year, district, params, demand, urban_hh,
         urban_count = urban_hh
         rural_count = rural_hh
 
-    tech_mix = {}
-    shares = {}
+    rows = []
+    energy_by_tech: dict = {}
 
     for tech in base_shares[scenario_key]["urban"]:
         urban_share = base_shares[scenario_key]["urban"][tech]
         rural_share = base_shares[scenario_key]["rural"][tech]
-        weighted_share = (urban_share * urban_count + rural_share * rural_count) / (urban_count + rural_count + 1e-6)
+        weighted_share = (urban_share * urban_count + rural_share * rural_count) / (
+            urban_count + rural_count + 1e-6
+        )
         energy = demand * weighted_share
-        shares[tech] = round(energy, 4)
+        energy_by_tech[tech] = round(energy, 4)
+        rows.append(
+            {
+                "region": district,
+                "year": year,
+                "technology": tech,
+                "share": round(weighted_share, 4),
+                "energy_GJ": round(energy, 4),
+            }
+        )
 
-    return list(shares.keys()), shares
+    df = pd.DataFrame(rows).set_index(["region", "year"])
+    return df, energy_by_tech
+
+
+def generate_adoption_tables(
+    scenario: str, years: List[int], districts: List[str] | None = None
+) -> pd.DataFrame:
+    """Generate adoption tables for a scenario and persist to CSV.
+
+    Parameters
+    ----------
+    scenario : str
+        Scenario name to evaluate.
+    years : list
+        Years to include.
+    districts : list, optional
+        Districts to process. Defaults to all districts in the household
+        projection table.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Adoption data indexed by region and year with technology, share and
+        energy columns.
+    """
+
+    districts = districts or sorted(household_df.index.get_level_values(0).unique())
+    records: List[pd.DataFrame] = []
+    params = {}
+    for year in years:
+        for district in districts:
+            try:
+                hh = household_df.loc[(district, year)]
+                urban_hh = hh["Urban_Households"]
+                rural_hh = hh["Rural_Households"]
+            except KeyError:
+                continue
+            demand = (urban_hh * 6.5) + (rural_hh * 5.5)
+            df, _ = get_tech_mix_by_scenario(
+                scenario, year, district, params, demand, urban_hh, rural_hh, {}
+            )
+            records.append(df)
+
+    result = pd.concat(records)
+    os.makedirs("results", exist_ok=True)
+    result.to_csv(os.path.join("results", f"adoption_{scenario}.csv"))
+    return result
+

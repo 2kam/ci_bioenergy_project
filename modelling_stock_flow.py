@@ -39,7 +39,10 @@ import pandas as pd
 from data_input import get_parameters
 from population_urbanization_model import calculate_population_urbanization
 from energy_demand_model import project_household_energy_demand
-from technology_adoption_model import get_tech_mix_by_scenario
+from technology_adoption_model import (
+    get_tech_mix_by_scenario,
+    generate_adoption_tables,
+)
 from ghg_emissions_model import calculate_emissions
 from config import SCENARIOS, YEARS
 
@@ -116,6 +119,9 @@ def run_all_scenarios(
     results_per_scenario: Dict[str, pd.DataFrame] = {}
 
     for scenario in scenarios:
+        # Persist adoption metrics for the scenario so they can be joined
+        # with spatial data or PyPSA networks.
+        generate_adoption_tables(scenario, years)
         scenario_results: List[Dict[str, float]] = []
         # Initialize grid emission factor CO₂; update each year
         grid_ef_CO2 = params["grid_emission_factor_CO2_kg_kWh"]
