@@ -15,6 +15,8 @@ from spatial_config import (
     RURAL_DEMAND_GJ_PER_HH,
 )
 from data_input import get_parameters
+import pandas as pd
+from era5_profiles import load_era5_series
 
 # -------------------------------------------------------
 # Function: Total Cooking Energy Demand (GJ)
@@ -65,6 +67,39 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
         urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
 
+
+
+# -------------------------------------------------------
+# Function: Disaggregate Annual Demand to Hourly Series
+# -------------------------------------------------------
+
+
+def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, region_geom) -> pd.Series:
+    """Disaggregate annual energy demand to an hourly series using ERA5 data.
+
+    The ERA5 profile is averaged over the provided region and normalised to
+    unit sum before weighting the annual total.
+
+    Parameters
+    ----------
+    annual_gj : float
+        Annual energy demand in gigajoules.
+    cutout_path : str
+        Path to an ERA5 cutout NetCDF file produced with :mod:`atlite`.
+    variable : str
+        Name of the variable inside the cutout, e.g. ``"t2m"`` for
+        2 m temperature.
+    region_geom : shapely geometry or GeoPandas object
+        Geometry of the region for which the profile should be derived.
+
+    Returns
+    -------
+    pandas.Series
+        Hourly energy demand in gigajoules.
+    """
+    profile = load_era5_series(cutout_path, variable, region_geom)
+    weights = profile / profile.sum()
+    return weights * annual_gj
 # -------------------------------------------------------
 # Parameters and Precomputed Demand Table
 # -------------------------------------------------------

@@ -146,6 +146,39 @@ The script scales 2023 district‑level demand by predefined multipliers
 `regional_supply_full_corrected.csv` and reports the surplus or deficit
 per district. Results are written to `results/supply_demand_<year>.csv`.
 
+## Hourly demand with ERA5
+
+Hourly demand profiles can be derived from ERA5 reanalysis data. Use
+[atlite](https://github.com/PyPSA/atlite) to prepare a cutout covering
+Côte d'Ivoire and store the resulting NetCDF file under
+``data/era5/``::
+
+    import atlite
+    cutout = atlite.Cutout(
+        path="data/era5/civ-2019.nc",
+        module="era5",
+        x=slice(-8.5, -2.5),
+        y=slice(4, 11),
+        time="2019",
+    )
+    cutout.write()
+
+The :mod:`era5_profiles` module loads these cutouts and exposes
+:func:`era5_profiles.load_era5_series` for extracting hourly variables.
+Annual demand values can be distributed to an hourly series by weighting
+with the ERA5-derived profile::
+
+    from energy_demand_model import disaggregate_to_hourly
+    hourly = disaggregate_to_hourly(
+        annual_gj,
+        "data/era5/civ-2019.nc",
+        "t2m",
+        region_geom,
+    )
+
+The returned series contains hourly demand in gigajoules indexed by
+UTC timestamps.
+
 ## Reproducibility notes
 
 * Both pipelines read the same demographic data file stored in the
