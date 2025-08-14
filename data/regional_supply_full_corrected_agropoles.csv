@@ -1,0 +1,20 @@
+District,Biomass_Type,Technology,Available_GJ,Notes,Agropole
+Montagnes,Cocoa,Biochar,63000000,Derived from cocoa pods,"Agro-pôle Ouest (Cocoa, Coffee)"
+Bas-Sassandra,Cocoa,Biochar,42000000,High cocoa pod availability,"Agro-pôle Sud-Ouest (Cocoa, Palm Oil)"
+Sassandra-Marahoué,Cocoa,Biochar,31500000,Biomass project zone,Agro-pôle Centre-Ouest (Cocoa)
+Comoé,Palm Oil,Biogas (EFB),4250000,From Sud-Comoé EFB,"Agro-pôle Sud-Est (Palm Oil, Rubber, Cashew)"
+Bas-Sassandra,Palm Oil,Biogas (EFB),6800000,From San Pedro EFB,"Agro-pôle Sud-Ouest (Cocoa, Palm Oil)"
+Gôh-Djiboua,Palm Oil,Biogas (EFB),3400000,From Divo region,"Agro-pôle Centre-Sud (Palm Oil, Rubber)"
+Lagunes,Palm Oil,Biogas (EFB),2125000,"From Agnéby-Tiassa, La Mé","Agro-pôle Sud (Palm Oil, Rubber, Horticulture)"
+Comoé,Rubber Wood,Wood Chips,225000,SBP-certified smallholder rubber biomass,"Agro-pôle Sud-Est (Palm Oil, Rubber, Cashew)"
+Lagunes,Rubber Wood,Wood Chips,450000,Expansion from forest and sawdust residues,"Agro-pôle Sud (Palm Oil, Rubber, Horticulture)"
+Agnéby-Tiassa,Mixed Biomass,Mixed (proxy),38609341,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Sud (Food Crops, Rubber)"
+Béré,Mixed Biomass,Mixed (proxy),45043316,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Nord (Cotton, Rice, Cashew)"
+Gbêkê,Mixed Biomass,Mixed (proxy),43434626,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Centre (Rice, Maize, Cashew)"
+Guémon,Mixed Biomass,Mixed (proxy),52282420,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Ouest (Cocoa, Coffee)"
+Gôh,Mixed Biomass,Mixed (proxy),45043316,Extrapolated using rural HH × avg biomass intensity,Agro-pôle Centre-Ouest (Food Crops)
+San Pedro,Mixed Biomass,Mixed (proxy),24130348,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Sud-Ouest (Cocoa, Palm Oil)"
+Sud-Comoé,Mixed Biomass,Mixed (proxy),38608556,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Sud-Est (Cocoa, Palm Oil)"
+Vallée du Bandama,Mixed Biomass,Mixed (proxy),48260695,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Centre-Nord (Rice, Cashew)"
+Yamoussoukro,Mixed Biomass,Mixed (proxy),16086898,Extrapolated using rural HH × avg biomass intensity,"Agro-pôle Centre (Food Crops, Rice)"
+Abidjan,Urban Biowaste,Biogas/Compost,4200000,"Estimated from 600,000 t/y biodegradable urban waste × 7 GJ/t","Agro-pôle Urbain (Waste, Horticulture)"
