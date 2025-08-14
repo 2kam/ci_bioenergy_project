@@ -51,6 +51,11 @@ def main() -> None:
         default=YEARS,
         help="Model years to evaluate. Defaults to all configured years.",
     )
+    parser.add_argument(
+        "--optimise",
+        action="store_true",
+        help="Solve a least-cost optimisation (requires PuLP).",
+    )
     args = parser.parse_args()
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
@@ -59,7 +64,7 @@ def main() -> None:
             "✔ Stock‑flow scenarios have been generated and saved to the results directory."
         )
     elif args.pipeline == "cost":
-        mc.run_all_scenarios(args.scenarios, args.years)
+        mc.run_all_scenarios(args.scenarios, args.years, optimise=args.optimise)
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."
         )

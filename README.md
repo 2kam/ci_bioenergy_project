@@ -26,11 +26,9 @@ with underscores.
 ## Prerequisites
 
 * Python 3.8 or later.
-* The only required Python package is **pandas**. The model includes
-  optional support for linear programming via **PuLP**; however, the
-  provided cost analysis uses a fixed‑mix calculation and does not
-  require PuLP. If you wish to run the `run_cost_minimise_cost` function
-  in `model.py`, install PuLP via `pip install pulp`.
+* The only required Python package is **pandas**. The cost pipeline can
+  optionally solve a least‑cost optimisation using **PuLP**. Install it
+  with `pip install pulp` if you intend to run the optimisation mode.
 
 ## Running the models
 
@@ -76,12 +74,16 @@ outside the repository (e.g. in a release asset or shared drive).
 
    ```bash
    python main.py cost
+   # or solve an optimisation with policy constraints (requires PuLP)
+   python main.py cost --optimise
    ```
 
    The results will be saved to `results/ci_bioenergy_techpathways.xlsx`.
    The workbook includes a `Details` sheet with cost breakdowns by
    technology and a `Summary` sheet with total costs by scenario and
-   year.
+   year. When optimisation is enabled, policy constraints for the
+   minimum clean share and maximum firewood share are taken from
+   `config.py`.
 
 5. **Inspect the outputs** using your preferred spreadsheet
    application. For example, the stock–flow model can be checked to

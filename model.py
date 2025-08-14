@@ -9,6 +9,9 @@ except ImportError:
     pulp = None  # PuLP is optional; some functions will check for its presence
 from typing import Dict
 
+# Expose public API
+__all__ = ["run_cost_fixed_mix", "run_cost_minimise_cost"]
+
 # ------------------------------------------------------------------
 # Helper: common result formatting
 # ------------------------------------------------------------------
