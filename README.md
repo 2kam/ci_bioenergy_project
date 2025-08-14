@@ -89,6 +89,21 @@ outside the repository (e.g. in a release asset or shared drive).
    scenarios (within ~1 %), technology lists match in both models and
    scenario names appear in lowercase.
 
+## Aggregating technology pathway results
+
+Running the cost analysis for multiple scenarios produces per‑scenario
+CSV files in the `results/` directory (e.g.
+`techpathways_<scenario>.csv` and `techpathways_summary_<scenario>.csv`).
+Combine these into consolidated tables with a `Scenario` column by
+running:
+
+```bash
+python results/aggregate_techpathways.py
+```
+
+This generates `techpathways_all.csv` and
+`techpathways_summary_all.csv` in the same folder.
+
 ## Reproducibility notes
 
 * Both pipelines read the same demographic data file stored in the
