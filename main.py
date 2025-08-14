@@ -51,6 +51,16 @@ def main() -> None:
         default=YEARS,
         help="Model years to evaluate. Defaults to all configured years.",
     )
+    parser.add_argument(
+
+        "--optimise",
+        action="store_true",
+        help="Solve a least-cost optimisation (requires PuLP).",
+
+        "--pypsa-export",
+        action="store_true",
+        help="Write PyPSA-Earth compatible CSVs after running the pipeline.",
+    )
     args = parser.parse_args()
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
@@ -58,11 +68,26 @@ def main() -> None:
         print(
             "✔ Stock‑flow scenarios have been generated and saved to the results directory."
         )
+        if args.pypsa_export:
+            print("⚠ PyPSA export is currently only supported for the cost pipeline.")
     elif args.pipeline == "cost":
-        mc.run_all_scenarios(args.scenarios, args.years)
+        mc.run_all_scenarios(args.scenarios, args.years, optimise=args.optimise)
+
+        df_full, _ = mc.run_all_scenarios(args.scenarios, args.years)
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."
         )
+        if args.pypsa_export and not df_full.empty:
+            from pypsa_export import write_pypsa_generators, write_pypsa_loads
+
+            for (scenario, year), df_subset in df_full.groupby(["Scenario", "Year"]):
+                tech_costs = mc._load_levelised_costs(scenario, year)
+                out_dir = os.path.join("results", "pypsa", scenario, str(year))
+                write_pypsa_loads(df_subset, out_dir)
+                write_pypsa_generators(df_subset, tech_costs, out_dir)
+            print(
+                "✔ PyPSA export files written under results/pypsa/<scenario>/<year>/"
+            )
 
 
 if __name__ == "__main__":

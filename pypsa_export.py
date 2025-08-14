@@ -13,6 +13,27 @@ Example
 >>> n = pypsa.Network("path/to/network.nc")
 >>> pe.attach_adoption_data(n, "bau", 2030)
 >>> n.export_to_csv_folder("results/pypsa_network")
+
+"""Utilities for exporting results to the PyPSA-Earth format.
+
+This module provides helpers to translate the modelling outputs
+into the CSV structures expected by `PyPSA-Earth`_. It focuses on
+providing regional cooking-electricity demand as loads and the
+availability of clean cooking fuels as dispatchable generators.
+
+The export functions intentionally cover only the subset of
+technologies that map cleanly to power-system components:
+
+* ``electricity`` demand is mapped to :file:`load.csv` entries.
+* ``biomass`` (aggregated from traditional and improved biomass
+  technologies), ``biogas`` and ``lpg`` supplies are mapped to
+  :file:`generators.csv` entries.
+
+The resulting CSV files can be referenced from a PyPSA-Earth
+``config.yaml`` to integrate cooking energy considerations into
+broader power-system analyses.
+
+.. _PyPSA-Earth: https://pypsa-earth.readthedocs.io/
 """
 
 from __future__ import annotations
@@ -61,3 +82,121 @@ def attach_adoption_data(network, scenario: str, year: int):
         merged.set_index("region"), left_on="name", right_index=True, how="left"
     )
     return network
+
+from typing import Dict
+
+import pandas as pd
+
+
+_HOURS_PER_YEAR = 8760
+_GJ_TO_MWH = 1 / 3.6  # 1 GJ = 0.277777... MWh
+
+
+def _ensure_dir(path: str) -> None:
+    """Create ``path`` if it does not yet exist."""
+
+    os.makedirs(path, exist_ok=True)
+
+
+def write_pypsa_loads(df_results: pd.DataFrame, output_dir: str) -> None:
+    """Export regional electricity demand in ``load.csv`` format.
+
+    Parameters
+    ----------
+    df_results:
+        DataFrame with at least the columns ``Region``, ``Technology`` and
+        ``Energy_GJ``. Only rows where ``Technology`` equals ``"electricity"``
+        are considered.
+    output_dir:
+        Directory where :file:`load.csv` will be written.
+
+    Notes
+    -----
+    ``p_set`` is computed as the average power in megawatts using
+    ``Energy_GJ / (3.6 * 8760)``.
+    """
+
+    loads = df_results[df_results["Technology"] == "electricity"]
+    if loads.empty:
+        return
+
+    loads = loads.groupby("Region")["Energy_GJ"].sum().reset_index()
+    loads["name"] = loads["Region"].apply(lambda r: f"load_{r}")
+    loads["bus"] = loads["Region"]
+    loads["p_set"] = loads["Energy_GJ"] * _GJ_TO_MWH / _HOURS_PER_YEAR
+
+    _ensure_dir(output_dir)
+    loads[["name", "bus", "p_set"]].to_csv(os.path.join(output_dir, "load.csv"), index=False)
+
+
+def write_pypsa_generators(
+    df_results: pd.DataFrame, tech_costs: Dict[str, float], output_dir: str
+) -> None:
+    """Export fuel supplies as dispatchable generators.
+
+    Parameters
+    ----------
+    df_results:
+        DataFrame with columns ``Region``, ``Technology`` and ``Energy_GJ``.
+    tech_costs:
+        Mapping of technology names to levelised cost in ``USD/GJ``. Costs
+        are converted to ``USD/MWh`` when populating ``marginal_cost``.
+    output_dir:
+        Directory where :file:`generators.csv` will be written.
+
+    Notes
+    -----
+    The function aggregates individual technology rows into three carriers:
+    ``biomass`` (firewood, charcoal, ICS variants and improved biomass),
+    ``biogas`` and ``lpg``. For each region a single generator is created per
+    carrier with ``p_nom`` corresponding to the average available power and
+    ``p_max_pu`` fixed at ``1`` (fully dispatchable).
+    """
+
+    carrier_map = {
+        "biomass": [
+            "firewood",
+            "charcoal",
+            "ics_firewood",
+            "ics_charcoal",
+            "improved_biomass",
+        ],
+        "biogas": ["biogas"],
+        "lpg": ["lpg"],
+    }
+
+    rows = []
+    for carrier, techs in carrier_map.items():
+        subset = df_results[df_results["Technology"].isin(techs)]
+        if subset.empty:
+            continue
+        grouped = subset.groupby(["Region", "Technology"]) ["Energy_GJ"].sum().reset_index()
+        for region in grouped["Region"].unique():
+            reg_df = grouped[grouped["Region"] == region]
+            total_energy = reg_df["Energy_GJ"].sum()
+            if total_energy <= 0:
+                continue
+            p_nom = total_energy * _GJ_TO_MWH / _HOURS_PER_YEAR
+            # Weighted average cost across contributing technologies
+            weighted_cost_gj = sum(
+                row["Energy_GJ"] * tech_costs.get(row["Technology"], 0.0)
+                for _, row in reg_df.iterrows()
+            ) / total_energy
+            marginal_cost = weighted_cost_gj / _GJ_TO_MWH  # USD/MWh
+            rows.append(
+                {
+                    "name": f"{carrier}_{region}",
+                    "bus": region,
+                    "carrier": carrier,
+                    "p_nom": p_nom,
+                    "p_max_pu": 1.0,
+                    "marginal_cost": marginal_cost,
+                }
+            )
+
+    if rows:
+        _ensure_dir(output_dir)
+        cols = ["name", "bus", "carrier", "p_nom", "p_max_pu", "marginal_cost"]
+        pd.DataFrame(rows)[cols].to_csv(
+            os.path.join(output_dir, "generators.csv"), index=False
+        )

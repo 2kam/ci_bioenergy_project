@@ -26,11 +26,9 @@ with underscores.
 ## Prerequisites
 
 * Python 3.8 or later.
-* The only required Python package is **pandas**. The model includes
-  optional support for linear programming via **PuLP**; however, the
-  provided cost analysis uses a fixed‑mix calculation and does not
-  require PuLP. If you wish to run the `run_cost_minimise_cost` function
-  in `model.py`, install PuLP via `pip install pulp`.
+* The only required Python package is **pandas**. The cost pipeline can
+  optionally solve a least‑cost optimisation using **PuLP**. Install it
+  with `pip install pulp` if you intend to run the optimisation mode.
 
 ## Running the models
 
@@ -76,12 +74,29 @@ outside the repository (e.g. in a release asset or shared drive).
 
    ```bash
    python main.py cost
+   # or solve an optimisation with policy constraints (requires PuLP)
+   python main.py cost --optimise
    ```
 
    The results will be saved to `results/ci_bioenergy_techpathways.xlsx`.
    The workbook includes a `Details` sheet with cost breakdowns by
    technology and a `Summary` sheet with total costs by scenario and
-   year.
+   year. When optimisation is enabled, policy constraints for the
+   minimum clean share and maximum firewood share are taken from
+   `config.py`.
+
+   Append ``--pypsa-export`` to additionally produce CSV files
+   compatible with `PyPSA‑Earth <https://pypsa-earth.readthedocs.io/>`_:
+
+   ```bash
+   python main.py cost --pypsa-export
+   ```
+
+   For each scenario and year, the command writes
+   ``results/pypsa/<scenario>/<year>/load.csv`` and
+   ``generators.csv``. ``load.csv`` contains regional
+   cooking‑electricity demand while ``generators.csv`` provides
+   dispatchable biomass, biogas and LPG supply.
 
 5. **Inspect the outputs** using your preferred spreadsheet
    application. For example, the stock–flow model can be checked to
@@ -103,6 +118,21 @@ python results/aggregate_techpathways.py
 
 This generates `techpathways_all.csv` and
 `techpathways_summary_all.csv` in the same folder.
+
+## Exporting to PyPSA‑Earth
+
+The CSVs generated with ``--pypsa-export`` can be referenced from a
+PyPSA‑Earth configuration to include clean‑cooking demand and fuel
+supplies. Example snippet:
+
+```yaml
+custom_data:
+  load: results/pypsa/bau/2030/load.csv
+  generators: results/pypsa/bau/2030/generators.csv
+```
+
+Adjust the paths, scenario (``bau``) and year (``2030``) as needed for
+your analysis.
 
 ## Supply and demand comparison
 
@@ -141,6 +171,39 @@ pe.attach_adoption_data(n, "bau", 2030)
 
 The merged `network.buses` DataFrame then includes household counts and
 adoption metrics for downstream energy system analyses.
+
+## Hourly demand with ERA5
+
+Hourly demand profiles can be derived from ERA5 reanalysis data. Use
+[atlite](https://github.com/PyPSA/atlite) to prepare a cutout covering
+Côte d'Ivoire and store the resulting NetCDF file under
+``data/era5/``::
+
+    import atlite
+    cutout = atlite.Cutout(
+        path="data/era5/civ-2019.nc",
+        module="era5",
+        x=slice(-8.5, -2.5),
+        y=slice(4, 11),
+        time="2019",
+    )
+    cutout.write()
+
+The :mod:`era5_profiles` module loads these cutouts and exposes
+:func:`era5_profiles.load_era5_series` for extracting hourly variables.
+Annual demand values can be distributed to an hourly series by weighting
+with the ERA5-derived profile::
+
+    from energy_demand_model import disaggregate_to_hourly
+    hourly = disaggregate_to_hourly(
+        annual_gj,
+        "data/era5/civ-2019.nc",
+        "t2m",
+        region_geom,
+    )
+
+The returned series contains hourly demand in gigajoules indexed by
+UTC timestamps.
 
 ## Reproducibility notes
 

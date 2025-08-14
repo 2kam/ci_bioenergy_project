@@ -40,8 +40,13 @@ from spatial_config import (
     RURAL_DEMAND_GJ_PER_HH,
 )
 from technology_adoption_model import get_tech_mix_by_scenario
-from model import run_cost_fixed_mix
-from config import SCENARIOS, YEARS
+from model import run_cost_fixed_mix, run_cost_minimise_cost, pulp
+from config import (
+    SCENARIOS,
+    YEARS,
+    MIN_CLEAN_SHARE,
+    MAX_FIREWOOD_SHARE,
+)
 
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
@@ -160,7 +165,9 @@ def _load_levelised_costs(
 
 
 def run_all_scenarios(
-    scenarios: List[str] | None = None, years: List[int] | None = None
+    scenarios: List[str] | None = None,
+    years: List[int] | None = None,
+    optimise: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """Execute the cost optimisation pipeline across all scenarios and years.
@@ -174,6 +181,9 @@ def run_all_scenarios(
         Scenario names to evaluate. Defaults to :data:`config.SCENARIOS`.
     years : list, optional
         Model years to process. Defaults to :data:`config.YEARS`.
+    optimise : bool, optional
+        If ``True``, solve a least-cost optimisation using PuLP.
+        Otherwise use the fixed adoption shares.
 
     Returns
     -------
@@ -184,6 +194,11 @@ def run_all_scenarios(
     scenarios = scenarios or SCENARIOS
     years = years or YEARS
     os.makedirs("results", exist_ok=True)
+
+    if optimise and pulp is None:
+        raise RuntimeError(
+            "PuLP is required for optimisation but is not installed. Install it via 'pip install pulp'."
+        )
     all_rows: List[pd.DataFrame] = []
     summary_rows: List[Dict[str, float]] = []
     for scenario in scenarios:
@@ -195,23 +210,35 @@ def run_all_scenarios(
                 if demand <= 0:
                     continue
                 tech_costs = _compute_levelised_costs(urban_hh, rural_hh)
-                # Derive energy shares for the district using the adoption model
-                _, energy_shares = get_tech_mix_by_scenario(
-                    scenario,
-                    year,
-                    reg,
-                    {},
-                    demand,
-                    urban_hh,
-                    rural_hh,
-                    {},
-                )
-                # Convert energy shares to fractional shares
-                shares_fraction: Dict[str, float] = {}
-                for tech, energy in energy_shares.items():
-                    shares_fraction[tech] = energy / demand if demand > 0 else 0.0
-                # Run cost calculation using the fixed mix function
-                df_reg, cost = run_cost_fixed_mix(year, reg, demand, shares_fraction, tech_costs)
+                if optimise:
+                    df_reg, cost = run_cost_minimise_cost(
+                        year,
+                        reg,
+                        demand,
+                        MIN_CLEAN_SHARE,
+                        MAX_FIREWOOD_SHARE,
+                        tech_costs,
+                    )
+                else:
+                    # Derive energy shares for the district using the adoption model
+                    _, energy_shares = get_tech_mix_by_scenario(
+                        scenario,
+                        year,
+                        reg,
+                        {},
+                        demand,
+                        urban_hh,
+                        rural_hh,
+                        {},
+                    )
+                    # Convert energy shares to fractional shares
+                    shares_fraction: Dict[str, float] = {}
+                    for tech, energy in energy_shares.items():
+                        shares_fraction[tech] = energy / demand if demand > 0 else 0.0
+                    # Run cost calculation using the fixed mix function
+                    df_reg, cost = run_cost_fixed_mix(
+                        year, reg, demand, shares_fraction, tech_costs
+                    )
                 df_reg["Scenario"] = scenario
                 all_rows.append(df_reg)
 
