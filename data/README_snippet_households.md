@@ -1,7 +1,7 @@
 
 # 📄 Bioenergy Supply and Household Projection – Côte d’Ivoire (14 Districts)
 
-This documentation outlines the assumptions and methodology used to build the dataset `District-level_Household_Projections_UPDATED.csv`, which provides household projections for Côte d’Ivoire’s 14 autonomous districts from 2025 to 2050. This dataset supports the energy demand and cost modelling components of the national bioenergy scenario analysis.
+This documentation outlines the assumptions and methodology used to build the dataset `District-level_Household_Projections.csv`, which provides household projections for Côte d’Ivoire’s 14 autonomous districts from 2025 to 2050. This dataset supports the energy demand and cost modelling components of the national bioenergy scenario analysis.
 
 ---
 

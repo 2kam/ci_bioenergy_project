@@ -15,7 +15,7 @@ independent pipelines:
   levelised cost per gigajoule.
 
 Both pipelines read from a single demographic dataset
-(`data/District‑level_Household_Projections.csv`), share the same
+(`data/District-level_Household_Projections.csv`), share the same
 assumptions about household energy consumption (6.5 GJ/year for urban
 households and 5.5 GJ/year for rural households) and include a
 harmonised list of technologies (`firewood`, `charcoal`,
@@ -229,9 +229,9 @@ UTC timestamps.
 ## Reproducibility notes
 
 * Both pipelines read the same demographic data file stored in the
-  `data` folder. Ensure that `District‑level_Household_Projections.csv`
-  is present; it should contain rows for `National` with household
-  projections for 2030, 2040 and 2050.
+  `data` folder. Ensure that `District-level_Household_Projections.csv`
+  is present; it provides 5-year projections (2025–2050) of urban and
+  rural households for Côte d’Ivoire's 14 districts.
 
 * The stock–flow model updates the grid emission factor each decade
   according to the decarbonisation rate specified in
