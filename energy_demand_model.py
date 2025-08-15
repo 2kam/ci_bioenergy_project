@@ -1,3 +1,9 @@
+"""Energy demand calculations for the CI bioenergy project."""
+
+from __future__ import annotations
+
+from numbers import Real
+
 """
 energy_demand_model.py
 
@@ -9,6 +15,7 @@ tables for regional demand by year.
 
 from __future__ import annotations
 
+
 try:
     from spatial_config import (
         regions,
@@ -17,6 +24,8 @@ try:
         urban_hh_by_region_year,
         rural_hh_by_region_year,
     )
+except Exception:  # pragma: no cover - allow import in minimal environments
+=======
 except Exception:  # pragma: no cover - fallback if data files are unavailable
     regions = []
     URBAN_DEMAND_GJ_PER_HH = 0.0
@@ -25,6 +34,8 @@ except Exception:  # pragma: no cover - fallback if data files are unavailable
     rural_hh_by_region_year = {}
 
 from data_input import get_parameters
+
+
 import pandas as pd
 from numbers import Real
 
@@ -35,6 +46,8 @@ from numbers import Real
 
 
 def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) -> float:
+    """Return total annual cooking energy demand."""
+
     """Return total annual cooking energy demand.
 
     Energy demand is assumed to scale linearly with population. This
@@ -64,6 +77,8 @@ def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) ->
 
 
 def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
+    """Return total annual cooking energy demand given household counts."""
+
     """Return total annual cooking energy demand given household counts.
 
     Multiplies the number of urban and rural households by their
@@ -91,6 +106,13 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
         urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
 
+
+def disaggregate_to_hourly(
+    annual_gj: float, cutout_path: str, variable: str, region_geom
+) -> "pd.Series":
+    """Disaggregate annual demand to an hourly series using ERA5 data."""
+
+    import pandas as pd  # Imported lazily
 
 # -------------------------------------------------------
 # Function: Disaggregate Annual Demand to Hourly Series
@@ -129,16 +151,16 @@ def disaggregate_to_hourly(
     profile = load_era5_series(cutout_path, variable, region_geom)
     total = profile.sum()
     if total == 0:
-        raise ValueError(
-            "ERA5 profile sums to zero; cannot disaggregate to hourly series"
-        )
+        raise ValueError("ERA5 profile sums to zero; cannot disaggregate")
     weights = profile / total
     return weights * annual_gj
+
 
 
 # -------------------------------------------------------
 # Parameters and Precomputed Demand Table
 # -------------------------------------------------------
+
 
 
 params = get_parameters()
@@ -150,32 +172,7 @@ def project_population(
     base_population: int,
     annual_growth_rate: float,
 ) -> float:
-    """Compound population projection using exponential growth.
-
-    Parameters
-    ----------
-    base_year : int
-        The starting year for the projection.
-    target_year : int
-        The future year for which population should be estimated.
-        Must be greater than or equal to ``base_year``.
-    base_population : int
-        Population in ``base_year``.
-    annual_growth_rate : float
-        Fractional annual population growth rate. Must be non‑negative.
-
-    Returns
-    -------
-    float
-        Projected population in ``target_year``. If ``target_year`` equals
-        ``base_year``, the base population is returned (zero growth).
-
-    Raises
-    ------
-    ValueError
-        If ``target_year`` is before ``base_year`` or if
-        ``annual_growth_rate`` is negative.
-    """
+    """Compound population projection using exponential growth."""
 
     if target_year < base_year:
         raise ValueError("target_year must be greater than or equal to base_year")
@@ -186,28 +183,27 @@ def project_population(
     return base_population * ((1 + annual_growth_rate) ** years)
 
 
+# Base assumptions (defaults enable importing without full parameter set)
+
 # Set base assumptions
+
 base_year = 2025
-base_population = params["population_total_2025"]
-growth_rate = params["population_growth_rate_annual"]
-per_capita_demand = params["cooking_energy_demand_per_capita_GJ_yr"]
-hh_size_urban = params["household_size_urban"]
-hh_size_rural = params["household_size_rural"]
+base_population = params.get("population_total_2025", 0)
+growth_rate = params.get("population_growth_rate_annual", 0)
+per_capita_demand = params.get("cooking_energy_demand_per_capita_GJ_yr", 0)
+hh_size_urban = params.get("household_size_urban", 1)
+hh_size_rural = params.get("household_size_rural", 1)
 
-# Define model years
+# Model years and regional counts
 years = [2030, 2040, 2050]
-
-# Ensure regions are defined before computing populations
-if not regions:
-    raise ValueError("No regions provided; `regions` list is empty.")
-n_regions = len(regions)
+n_regions = len(regions) if regions else 1
 
 # Project total population for each model year
 total_population_by_year = {
     yr: project_population(base_year, yr, base_population, growth_rate) for yr in years
 }
 
-# Derive regional populations from data when available; fall back to uniform split
+# Derive regional populations, falling back to a uniform split
 population_by_year_and_region = {}
 for yr in years:
     pops_for_year = {}
