@@ -42,3 +42,16 @@ def test_disaggregate_to_hourly_nonzero_profile(monkeypatch):
     expected = pd.Series([1.0, 2.0, 3.0], index=series.index)
     pd.testing.assert_series_equal(result, expected)
 
+
+def test_disaggregate_to_hourly_resample(monkeypatch):
+    series = pd.Series(
+        [1, 1, 1, 1], index=pd.date_range("2020-01-01", periods=4, freq="h")
+    )
+    edm = _import_edm(monkeypatch, series)
+
+    result = edm.disaggregate_to_hourly(8, "dummy", "t2m", None, freq="4H")
+    expected = pd.Series(
+        [8.0], index=pd.date_range("2020-01-01", periods=1, freq="4H")
+    )
+    pd.testing.assert_series_equal(result, expected)
+
