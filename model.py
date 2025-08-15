@@ -67,12 +67,18 @@ def run_cost_minimise_cost(year: int,
                            demand_GJ: float,
                            min_clean_share: float,
                            max_firewood_share: float,
-                           tech_costs: Dict[str, float]) -> tuple[pd.DataFrame, float]:
+                           tech_costs: Dict[str, float],
+                           solver: str = "cbc") -> tuple[pd.DataFrame, float]:
     """
     LP that chooses the cheapest technology mix subject to:
       - Σ GJ == demand_GJ
       - clean_tech_share >= min_clean_share
       - firewood_tech_share <= max_firewood_share
+
+    Parameters
+    ----------
+    solver : str, optional
+        Optimisation solver to use (``"cbc"``, ``"glpk"`` or ``"gurobi"``).
     """
     clean_techs = {"biogas", "ethanol", "electricity", "lpg", "improved_biomass"}
     firewood_techs = {"firewood", "charcoal"}
@@ -100,7 +106,17 @@ def run_cost_minimise_cost(year: int,
     model += pulp.lpSum([gj_vars[t] for t in firewood_techs]) <= max_firewood_share * demand_GJ
 
     # Solve
-    model.solve(pulp.PULP_CBC_CMD(msg=0))
+    solver_map = {
+        "cbc": pulp.PULP_CBC_CMD,
+        "glpk": pulp.GLPK_CMD,
+        "gurobi": pulp.GUROBI_CMD,
+    }
+    if solver not in solver_map:
+        raise ValueError(f"Unknown solver '{solver}'.")
+    solver_cmd = solver_map[solver](msg=0)
+    if hasattr(solver_cmd, "available") and not solver_cmd.available():
+        raise RuntimeError(f"Requested solver '{solver}' is not available.")
+    model.solve(solver_cmd)
     if pulp.LpStatus[model.status] != "Optimal":
         raise RuntimeError(f"No optimal solution for {region} in {year}.")
 

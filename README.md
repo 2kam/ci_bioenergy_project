@@ -29,6 +29,9 @@ with underscores.
 * The only required Python package is **pandas**. The cost pipeline can
   optionally solve a least‑cost optimisation using **PuLP**. Install it
   with `pip install pulp` if you intend to run the optimisation mode.
+  CBC ships with PuLP, while ``--solver glpk`` requires the external
+  ``glpsol`` binary and ``--solver gurobi`` needs a licensed Gurobi
+  installation.
 
 ## Preparing ERA5 weather cutouts
 
@@ -90,6 +93,8 @@ outside the repository (e.g. in a release asset or shared drive).
    python main.py cost
    # or solve an optimisation with policy constraints (requires PuLP)
    python main.py cost --optimise
+   # select an alternative solver such as GLPK
+   python main.py cost --optimise --solver glpk
    ```
 
    The results will be saved to `results/ci_bioenergy_techpathways.xlsx`.
