@@ -17,7 +17,15 @@ regions = sorted(demographics.index.get_level_values("District").unique())
 URBAN_DEMAND_GJ_PER_HH = 6.5  # IEA (2024), page 5
 RURAL_DEMAND_GJ_PER_HH = 5.5  # IEA (2024), page 5
 
+
 def compute_demand_by_region_year():
+    required_cols = {"Urban_Households", "Rural_Households"}
+    missing = required_cols - set(demographics.columns)
+    if missing:
+        raise KeyError(
+            f"Missing required columns: {', '.join(sorted(missing))}"
+        )
+
     demand = {}
     for (district, year), row in demographics.iterrows():
         if year not in demand:
@@ -81,6 +89,6 @@ def generate_buses_csv(output_path: str = os.path.join("results", "buses.csv")) 
     return buses_df
 
 
-# Generate buses.csv on import so downstream modules can rely on it
-buses_df = generate_buses_csv()
+if __name__ == "__main__":
+    buses_df = generate_buses_csv()
 
