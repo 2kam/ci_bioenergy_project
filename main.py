@@ -52,11 +52,11 @@ def main() -> None:
         help="Model years to evaluate. Defaults to all configured years.",
     )
     parser.add_argument(
-
         "--optimise",
         action="store_true",
         help="Solve a least-cost optimisation (requires PuLP).",
-
+    )
+    parser.add_argument(
         "--pypsa-export",
         action="store_true",
         help="Write PyPSA-Earth compatible CSVs after running the pipeline.",
