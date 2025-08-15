@@ -78,7 +78,8 @@ def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, re
     """Disaggregate annual energy demand to an hourly series using ERA5 data.
 
     The ERA5 profile is averaged over the provided region and normalised to
-    unit sum before weighting the annual total.
+    unit sum before weighting the annual total. If the profile sums to zero,
+    a :class:`ValueError` is raised.
 
     Parameters
     ----------
@@ -98,7 +99,12 @@ def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, re
         Hourly energy demand in gigajoules.
     """
     profile = load_era5_series(cutout_path, variable, region_geom)
-    weights = profile / profile.sum()
+    total = profile.sum()
+    if total == 0:
+        raise ValueError(
+            "ERA5 profile sums to zero; cannot disaggregate to hourly series"
+        )
+    weights = profile / total
     return weights * annual_gj
 # -------------------------------------------------------
 # Parameters and Precomputed Demand Table
