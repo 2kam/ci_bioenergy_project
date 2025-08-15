@@ -27,7 +27,7 @@ def load_demographics() -> pd.DataFrame:
 
 # Load once for module-level calculations but keep loader for reuse
 demographics = load_demographics()
-=======
+
 # Load demographic data (district-level household projections)
 demographics = pd.read_csv(
     get_data_path("District-level_Household_Projections.csv")
