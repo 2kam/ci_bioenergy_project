@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 import pandas as pd
 
 from paths import get_data_path
@@ -7,12 +8,33 @@ from paths import get_data_path
 # configuration module does not import from the deprecated `scripts`
 # package.
 
+
+
+@lru_cache()
+def load_demographics() -> pd.DataFrame:
+    """Load district-level household projections."""
+
+    path = os.path.join("data", "District-level_Household_Projections.csv")
+    try:
+        df = pd.read_csv(path)
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"Demographic projection file not found: {path}"
+        ) from exc
+    df.columns = df.columns.str.strip()
+    df.set_index(["District", "Year"], inplace=True)
+    return df
+
+# Load once for module-level calculations but keep loader for reuse
+demographics = load_demographics()
+=======
 # Load demographic data (district-level household projections)
 demographics = pd.read_csv(
     get_data_path("District-level_Household_Projections.csv")
 )
 demographics.columns = demographics.columns.str.strip()
 demographics.set_index(['District', 'Year'], inplace=True)
+
 
 # Extract regions (districts)
 regions = sorted(demographics.index.get_level_values("District").unique())
@@ -22,16 +44,17 @@ URBAN_DEMAND_GJ_PER_HH = 6.5  # IEA (2024), page 5
 RURAL_DEMAND_GJ_PER_HH = 5.5  # IEA (2024), page 5
 
 
-def compute_demand_by_region_year():
+def compute_demand_by_region_year(df: pd.DataFrame | None = None):
+    df = df if df is not None else demographics
     required_cols = {"Urban_Households", "Rural_Households"}
-    missing = required_cols - set(demographics.columns)
+    missing = required_cols - set(df.columns)
     if missing:
         raise KeyError(
             f"Missing required columns: {', '.join(sorted(missing))}"
         )
 
     demand = {}
-    for (district, year), row in demographics.iterrows():
+    for (district, year), row in df.iterrows():
         if year not in demand:
             demand[year] = {}
         urban_demand = row["Urban_Households"] * URBAN_DEMAND_GJ_PER_HH
@@ -40,10 +63,12 @@ def compute_demand_by_region_year():
         demand[year][district] = total_demand
     return demand
 
-def compute_urban_rural_hh_by_region_year():
+
+def compute_urban_rural_hh_by_region_year(df: pd.DataFrame | None = None):
+    df = df if df is not None else demographics
     urban = {}
     rural = {}
-    for (district, year), row in demographics.iterrows():
+    for (district, year), row in df.iterrows():
         if year not in urban:
             urban[year] = {}
             rural[year] = {}
