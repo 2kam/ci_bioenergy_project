@@ -10,7 +10,9 @@ from pathlib import Path
 
 import atlite
 
-CUTOUT_DIR = Path("data/era5")
+from paths import get_data_path
+
+CUTOUT_DIR = get_data_path("era5")
 
 
 def get_cutout_path(start_year: int, end_year: int) -> Path:

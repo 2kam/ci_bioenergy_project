@@ -1,10 +1,13 @@
-import os
 from typing import List, Tuple
 
 import pandas as pd
 
+from paths import get_data_path
+
 # Load household projections once
-household_df = pd.read_csv("data/District-level_Household_Projections.csv")
+household_df = pd.read_csv(
+    get_data_path("District-level_Household_Projections.csv")
+)
 household_df.columns = household_df.columns.str.strip()
 household_df.set_index(["District", "Year"], inplace=True)
 
