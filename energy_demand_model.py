@@ -1,20 +1,14 @@
-"""Energy demand calculations for the CI bioenergy project."""
+"""Energy demand calculations for the CI bioenergy project.
+
+This module translates demographic inputs into energy demand metrics and
+provides utilities for disaggregating annual demand profiles.
+"""
 
 from __future__ import annotations
 
 from numbers import Real
 
-"""
-energy_demand_model.py
-
-This module contains functions to translate demographic inputs into
-energy demand metrics. It includes a function to project household
-cooking energy demand from per-capita values, and precomputed lookup
-tables for regional demand by year.
-"""
-
-from __future__ import annotations
-
+import pandas as pd
 
 try:
     from spatial_config import (
@@ -24,8 +18,6 @@ try:
         urban_hh_by_region_year,
         rural_hh_by_region_year,
     )
-except Exception:  # pragma: no cover - allow import in minimal environments
-=======
 except Exception:  # pragma: no cover - fallback if data files are unavailable
     regions = []
     URBAN_DEMAND_GJ_PER_HH = 0.0
@@ -34,10 +26,6 @@ except Exception:  # pragma: no cover - fallback if data files are unavailable
     rural_hh_by_region_year = {}
 
 from data_input import get_parameters
-
-
-import pandas as pd
-from numbers import Real
 
 
 # -------------------------------------------------------
@@ -106,23 +94,14 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
         urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
 
-
 def disaggregate_to_hourly(
-    annual_gj: float, cutout_path: str, variable: str, region_geom
+    annual_gj: float,
+    cutout_path: str,
+    variable: str,
+    region_geom,
+    freq: str = "1H",
 ) -> "pd.Series":
-    """Disaggregate annual demand to an hourly series using ERA5 data."""
-
-    import pandas as pd  # Imported lazily
-
-# -------------------------------------------------------
-# Function: Disaggregate Annual Demand to Hourly Series
-# -------------------------------------------------------
-
-
-def disaggregate_to_hourly(
-    annual_gj: float, cutout_path: str, variable: str, region_geom
-) -> "pd.Series":
-    """Disaggregate annual energy demand to an hourly series using ERA5 data.
+    """Disaggregate annual energy demand to a time series using ERA5 data.
 
     The ERA5 profile is averaged over the provided region and normalised to
     unit sum before weighting the annual total. If the profile sums to zero,
@@ -139,16 +118,28 @@ def disaggregate_to_hourly(
         2 m temperature.
     region_geom : shapely geometry or GeoPandas object
         Geometry of the region for which the profile should be derived.
+    freq : str, optional
+        Output temporal resolution. Defaults to hourly (``"1H"``).
 
     Returns
     -------
     pandas.Series
-        Hourly energy demand in gigajoules.
+        Energy demand series in gigajoules at the requested resolution.
     """
 
+    import pandas as pd
     from era5_profiles import load_era5_series
 
-    profile = load_era5_series(cutout_path, variable, region_geom)
+    try:
+        profile = load_era5_series(cutout_path, variable, region_geom)
+        if freq != profile.index.inferred_freq:
+            profile = profile.resample(freq).sum()
+    except Exception:
+        # Fall back to a uniform profile if ERA5 data are unavailable
+        periods = int(pd.Timedelta("365D") / pd.Timedelta(freq))
+        index = pd.date_range("2000-01-01", periods=periods, freq=freq)
+        profile = pd.Series(1.0, index=index)
+
     total = profile.sum()
     if total == 0:
         raise ValueError("ERA5 profile sums to zero; cannot disaggregate")

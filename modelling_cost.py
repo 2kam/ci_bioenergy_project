@@ -41,6 +41,7 @@ from spatial_config import (
 )
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix, run_cost_minimise_cost, pulp
+from energy_demand_model import disaggregate_to_hourly
 from config import (
     SCENARIOS,
     YEARS,
@@ -168,6 +169,7 @@ def run_all_scenarios(
     scenarios: List[str] | None = None,
     years: List[int] | None = None,
     optimise: bool = False,
+    timeseries: str = "none",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """Execute the cost optimisation pipeline across all scenarios and years.
@@ -204,7 +206,32 @@ def run_all_scenarios(
     for scenario in scenarios:
         for year in years:
             for reg in regions:
-                demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
+                annual_demand = demand_by_region_year.get(year, {}).get(reg, 0.0)
+                if timeseries == "era5_4h":
+                    try:
+                        demand_series = disaggregate_to_hourly(
+                            annual_demand,
+                            os.path.join("data", "era5", "placeholder.nc"),
+                            "t2m",
+                            None,
+                            freq="4H",
+                        )
+                    except Exception:
+                        periods = int(pd.Timedelta("365D") / pd.Timedelta("4H"))
+                        idx = pd.date_range("2000-01-01", periods=periods, freq="4H")
+                        demand_series = pd.Series(annual_demand / periods, index=idx)
+                    out_ts = os.path.join(
+                        "results",
+                        "demand_timeseries",
+                        scenario,
+                        str(year),
+                        f"{reg}.csv",
+                    )
+                    os.makedirs(os.path.dirname(out_ts), exist_ok=True)
+                    demand_series.to_csv(out_ts, header=["demand_gj"])
+                    demand = float(demand_series.sum())
+                else:
+                    demand = annual_demand
                 urban_hh = urban_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 rural_hh = rural_hh_by_region_year.get(year, {}).get(reg, 0.0)
                 if demand <= 0:

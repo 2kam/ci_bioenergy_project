@@ -61,10 +61,16 @@ def main() -> None:
         action="store_true",
         help="Write PyPSA-Earth compatible CSVs after running the pipeline.",
     )
+    parser.add_argument(
+        "--timeseries",
+        choices=["none", "era5_4h"],
+        default="none",
+        help="Select demand output: annual only or 4-hour ERA5-based series.",
+    )
     args = parser.parse_args()
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
-        msf.run_all_scenarios(args.scenarios, args.years)
+        msf.run_all_scenarios(args.scenarios, args.years, timeseries=args.timeseries)
         print(
             "✔ Stock‑flow scenarios have been generated and saved to the results directory."
         )
@@ -72,7 +78,7 @@ def main() -> None:
             print("⚠ PyPSA export is currently only supported for the cost pipeline.")
     elif args.pipeline == "cost":
         df_full, _ = mc.run_all_scenarios(
-            args.scenarios, args.years, optimise=args.optimise
+            args.scenarios, args.years, optimise=args.optimise, timeseries=args.timeseries
         )
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."

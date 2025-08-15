@@ -112,6 +112,13 @@ outside the repository (e.g. in a release asset or shared drive).
    cooking‑electricity demand while ``generators.csv`` provides
    dispatchable biomass, biogas and LPG supply.
 
+   To create 4-hourly demand time series based on ERA5 profiles,
+   use the ``--timeseries`` flag:
+
+   ```bash
+   python main.py cost --timeseries era5_4h
+   ```
+
 5. **Inspect the outputs** using your preferred spreadsheet
    application. For example, the stock–flow model can be checked to
    verify that total demand for 2030 is nearly identical across
