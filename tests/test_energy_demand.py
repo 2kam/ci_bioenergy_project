@@ -11,7 +11,7 @@ def _prepare_modules(monkeypatch):
     data_file = (
         Path(__file__).resolve().parent.parent
         / "data"
-        / "District-level_Household_Projections_14Districts.csv"
+        / "District-level_Household_Projections.csv"
     )
     real_read_csv = pd.read_csv
 
