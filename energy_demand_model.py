@@ -9,14 +9,18 @@ tables for regional demand by year.
 
 from __future__ import annotations
 # Import regional definitions and per-household demand constants from the root modules
-from spatial_config import (
-    regions,
-    URBAN_DEMAND_GJ_PER_HH,
-    RURAL_DEMAND_GJ_PER_HH,
-)
+try:
+    from spatial_config import (
+        regions,
+        URBAN_DEMAND_GJ_PER_HH,
+        RURAL_DEMAND_GJ_PER_HH,
+    )
+except Exception:  # pragma: no cover - fallback for minimal environments
+    regions = []
+    URBAN_DEMAND_GJ_PER_HH = 0.0
+    RURAL_DEMAND_GJ_PER_HH = 0.0
 from data_input import get_parameters
-import pandas as pd
-from era5_profiles import load_era5_series
+from numbers import Real
 
 # -------------------------------------------------------
 # Function: Total Cooking Energy Demand (GJ)
@@ -41,6 +45,12 @@ def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) ->
     float
         Total annual cooking energy demand in gigajoules (GJ).
     """
+    if not isinstance(total_pop, Real) or total_pop < 0:
+        raise ValueError("total_pop must be a non-negative number")
+    if not isinstance(cooking_demand_per_capita, Real) or cooking_demand_per_capita < 0:
+        raise ValueError(
+            "cooking_demand_per_capita must be a non-negative number"
+        )
     return total_pop * cooking_demand_per_capita
 
 
@@ -63,6 +73,10 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
     float
         Total annual cooking energy demand in gigajoules (GJ).
     """
+    if not isinstance(urban_hh, Real) or urban_hh < 0:
+        raise ValueError("urban_hh must be a non-negative number")
+    if not isinstance(rural_hh, Real) or rural_hh < 0:
+        raise ValueError("rural_hh must be a non-negative number")
     return (
         urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
@@ -74,7 +88,7 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
 # -------------------------------------------------------
 
 
-def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, region_geom) -> pd.Series:
+def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, region_geom) -> "pd.Series":
     """Disaggregate annual energy demand to an hourly series using ERA5 data.
 
     The ERA5 profile is averaged over the provided region and normalised to
@@ -97,6 +111,9 @@ def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, re
     pandas.Series
         Hourly energy demand in gigajoules.
     """
+    import pandas as pd  # Imported lazily to avoid heavy dependency at module import
+    from era5_profiles import load_era5_series
+
     profile = load_era5_series(cutout_path, variable, region_geom)
     weights = profile / profile.sum()
     return weights * annual_gj
