@@ -70,10 +70,18 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
     if not isinstance(rural_hh, Real) or rural_hh < 0:
         raise ValueError("rural_hh must be a non-negative number")
 
+
     return (
         urban_hh * URBAN_DEMAND_GJ_PER_HH
         + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
+
+    return urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
+
+# -------------------------------------------------------
+# Function: Disaggregate Annual Demand to Hourly Series
+# -------------------------------------------------------
+
 
 
 def disaggregate_to_hourly(
@@ -81,10 +89,10 @@ def disaggregate_to_hourly(
     cutout_path: str,
     variable: str,
     region_geom,
-
     freq: str = "H",
 ) -> "pd.Series":
     """Disaggregate annual energy demand to a time series using ERA5 data.
+
 
 
 
@@ -93,6 +101,7 @@ def disaggregate_to_hourly(
 
     unit sum before weighting the annual total. If the profile sums to zero,
     a :class:`ValueError` is raised.
+
 
     Parameters
     ----------
@@ -106,30 +115,23 @@ def disaggregate_to_hourly(
     region_geom : shapely geometry or GeoPandas object
         Geometry of the region for which the profile should be derived.
     freq : str, optional
-
-        Resampling frequency. Defaults to ``"H"`` for hourly values. Other
-        pandas frequency strings are supported, e.g. ``"4H"`` for four-hour
-        intervals.
-
-        Output temporal resolution. Defaults to hourly (``"1H"``).
-
+        Resampling frequency. Defaults to ``"H"`` for hourly values.
+        Other pandas frequency strings are supported, e.g. ``"4H"`` for
+        four-hour intervals.
 
     Returns
     -------
     pandas.Series
-
-        Energy demand in gigajoules at the specified frequency.
-
         Energy demand series in gigajoules at the requested resolution.
-
-
     """
 
     from era5_profiles import load_era5_series
 
+
     profile = load_era5_series(cutout_path, variable, region_geom)
     if freq != "H":
         profile = profile.resample(freq).sum()
+
 
     try:
         profile = load_era5_series(cutout_path, variable, region_geom)
