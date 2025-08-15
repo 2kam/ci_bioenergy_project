@@ -26,6 +26,9 @@ def _prepare_modules(monkeypatch):
     era5_stub.load_era5_series = lambda *args, **kwargs: None
     monkeypatch.setitem(sys.modules, "era5_profiles", era5_stub)
 
+    monkeypatch.delitem(sys.modules, "spatial_config", raising=False)
+    monkeypatch.delitem(sys.modules, "energy_demand_model", raising=False)
+
     spatial_config = importlib.import_module("spatial_config")
     energy_demand_model = importlib.import_module("energy_demand_model")
     return spatial_config, energy_demand_model
