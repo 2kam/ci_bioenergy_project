@@ -13,6 +13,8 @@ from spatial_config import (
     regions,
     URBAN_DEMAND_GJ_PER_HH,
     RURAL_DEMAND_GJ_PER_HH,
+    urban_hh_by_region_year,
+    rural_hh_by_region_year,
 )
 from data_input import get_parameters
 import pandas as pd
@@ -116,19 +118,34 @@ base_year = 2025
 base_population = params["population_total_2025"]
 growth_rate = params["population_growth_rate_annual"]
 per_capita_demand = params["cooking_energy_demand_per_capita_GJ_yr"]
+hh_size_urban = params["household_size_urban"]
+hh_size_rural = params["household_size_rural"]
 
 # Define model years
 years = [2030, 2040, 2050]
 
-# Uniform regional population assumption
+# Ensure regions are defined before computing populations
+if not regions:
+    raise ValueError("No regions provided; `regions` list is empty.")
 n_regions = len(regions)
-population_by_year_and_region = {
-    yr: {
-        reg: project_population(base_year, yr, base_population, growth_rate) / n_regions
-        for reg in regions
-    }
-    for yr in years
+
+# Project total population for each model year
+total_population_by_year = {
+    yr: project_population(base_year, yr, base_population, growth_rate) for yr in years
 }
+
+# Derive regional populations from data when available; fall back to uniform split
+population_by_year_and_region = {}
+for yr in years:
+    pops_for_year = {}
+    for reg in regions:
+        urban_hh = urban_hh_by_region_year.get(yr, {}).get(reg)
+        rural_hh = rural_hh_by_region_year.get(yr, {}).get(reg)
+        if urban_hh is not None and rural_hh is not None:
+            pops_for_year[reg] = urban_hh * hh_size_urban + rural_hh * hh_size_rural
+        else:
+            pops_for_year[reg] = total_population_by_year[yr] / n_regions
+    population_by_year_and_region[yr] = pops_for_year
 
 # Total cooking energy demand by year and region (GJ)
 total_cooking_demand_GJ_by_year_and_region = {
