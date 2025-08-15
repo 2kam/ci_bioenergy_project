@@ -28,6 +28,7 @@ to run the cost optimisation for all scenarios and years.
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import Dict, List, Tuple
 import pandas as pd
 
@@ -118,6 +119,15 @@ def _compute_levelised_costs(urban_hh: float, rural_hh: float) -> Dict[str, floa
     return levelised
 
 
+@lru_cache()
+def load_tech_specs() -> pd.DataFrame:
+    path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
+    try:
+        return pd.read_csv(path)
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"Tech specs file not found: {path}") from exc
+
+
 def _load_levelised_costs(
     scenario: str | None = None, year: int | None = None
 ) -> Dict[str, float]:
@@ -150,18 +160,18 @@ def _load_levelised_costs(
     number of urban and rural households for the specified year.
 
     """
-    data_path = os.path.join(os.path.dirname(__file__), "data", "tech_specs.csv")
-    if os.path.exists(data_path):
-        df = pd.read_csv(data_path)
-        if scenario is not None and "Scenario" in df.columns:
-            df = df[df["Scenario"] == scenario]
-        if year is not None and "Year" in df.columns:
-            df = df[df["Year"] == year]
-        return dict(zip(df["Technology"], df["Cost_per_GJ"]))
+    try:
+        df = load_tech_specs()
+    except FileNotFoundError:
+        total_urban = sum(urban_hh_by_region_year.get(year, {}).values())
+        total_rural = sum(rural_hh_by_region_year.get(year, {}).values())
+        return _compute_levelised_costs(total_urban, total_rural)
 
-    total_urban = sum(urban_hh_by_region_year.get(year, {}).values())
-    total_rural = sum(rural_hh_by_region_year.get(year, {}).values())
-    return _compute_levelised_costs(total_urban, total_rural)
+    if scenario is not None and "Scenario" in df.columns:
+        df = df[df["Scenario"] == scenario]
+    if year is not None and "Year" in df.columns:
+        df = df[df["Year"] == year]
+    return dict(zip(df["Technology"], df["Cost_per_GJ"]))
 
 
 

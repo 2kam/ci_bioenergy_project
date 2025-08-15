@@ -1,12 +1,30 @@
 import os
+from functools import lru_cache
 from typing import List, Tuple
 
 import pandas as pd
 
-# Load household projections once
-household_df = pd.read_csv("data/District-level_Household_Projections.csv")
-household_df.columns = household_df.columns.str.strip()
-household_df.set_index(["District", "Year"], inplace=True)
+
+@lru_cache()
+def load_household_df() -> pd.DataFrame:
+    """Read household projections from disk.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data indexed by ``District`` and ``Year`` with household counts.
+    """
+
+    path = os.path.join("data", "District-level_Household_Projections.csv")
+    try:
+        df = pd.read_csv(path)
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"Household projection file not found: {path}"
+        ) from exc
+    df.columns = df.columns.str.strip()
+    df.set_index(["District", "Year"], inplace=True)
+    return df
 
 # Base shares can be scenario-dependent later
 base_shares = {
@@ -130,9 +148,10 @@ def get_tech_mix_by_scenario(
     if scenario_key not in base_shares:
         raise ValueError(f"Scenario '{scenario}' not recognised")
 
+    hh_df = load_household_df()
     try:
-        urban_count = household_df.loc[(district, year), "Urban_Households"]
-        rural_count = household_df.loc[(district, year), "Rural_Households"]
+        urban_count = hh_df.loc[(district, year), "Urban_Households"]
+        rural_count = hh_df.loc[(district, year), "Rural_Households"]
     except KeyError:
         urban_count = urban_hh
         rural_count = rural_hh
@@ -184,13 +203,14 @@ def generate_adoption_tables(
         energy columns.
     """
 
-    districts = districts or sorted(household_df.index.get_level_values(0).unique())
+    hh_df = load_household_df()
+    districts = districts or sorted(hh_df.index.get_level_values(0).unique())
     records: List[pd.DataFrame] = []
     params = {}
     for year in years:
         for district in districts:
             try:
-                hh = household_df.loc[(district, year)]
+                hh = hh_df.loc[(district, year)]
                 urban_hh = hh["Urban_Households"]
                 rural_hh = hh["Rural_Households"]
             except KeyError:
