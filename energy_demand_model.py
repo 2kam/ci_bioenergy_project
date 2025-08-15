@@ -1,20 +1,9 @@
-"""Energy demand calculations for the CI bioenergy project.
-
-
-This module provides simple projections of cooking energy demand based on
-population and household inputs. It also exposes a convenience function to
-disaggregate annual demand to hourly profiles using ERA5 data.
-=======
-
-This module translates demographic inputs into energy demand metrics and
-provides utilities for disaggregating annual demand profiles.
-
-"""
+"""Cooking demand projections and ERA5-based disaggregation for the CI
+bioenergy project."""
 
 from __future__ import annotations
 
 from numbers import Real
-
 
 import pandas as pd
 
@@ -39,17 +28,9 @@ else:
 from data_input import get_parameters
 
 
-
-import pandas as pd
-
-
-
-# -------------------------------------------------------
-# Function: Total Cooking Energy Demand (GJ)
-# -------------------------------------------------------
-
-
-def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) -> float:
+def project_energy_demand(
+    total_pop: float, cooking_demand_per_capita: float
+) -> float:
     """Return total annual cooking energy demand.
 
     Parameters
@@ -67,8 +48,13 @@ def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) ->
 
     if not isinstance(total_pop, Real) or total_pop < 0:
         raise ValueError("total_pop must be a non-negative number")
-    if not isinstance(cooking_demand_per_capita, Real) or cooking_demand_per_capita < 0:
-        raise ValueError("cooking_demand_per_capita must be a non-negative number")
+    if (
+        not isinstance(cooking_demand_per_capita, Real)
+        or cooking_demand_per_capita < 0
+    ):
+        raise ValueError(
+            "cooking_demand_per_capita must be a non-negative number"
+        )
     return total_pop * cooking_demand_per_capita
 
 
@@ -84,18 +70,10 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
     if not isinstance(rural_hh, Real) or rural_hh < 0:
         raise ValueError("rural_hh must be a non-negative number")
 
-    return urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
-
-
     return (
-        urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
+        urban_hh * URBAN_DEMAND_GJ_PER_HH
+        + rural_hh * RURAL_DEMAND_GJ_PER_HH
     )
-
-
-# -------------------------------------------------------
-# Function: Disaggregate Annual Demand to Hourly Series
-# -------------------------------------------------------
-
 
 
 def disaggregate_to_hourly(
@@ -106,16 +84,12 @@ def disaggregate_to_hourly(
 
     freq: str = "H",
 ) -> "pd.Series":
-    """Disaggregate annual energy demand to an hourly or aggregated series using ERA5 data.
-=======
-    freq: str = "1H",
-) -> "pd.Series":
     """Disaggregate annual energy demand to a time series using ERA5 data.
 
 
 
     unit sum before weighting the annual total. If the profile sums to zero, a
-    :class:`ValueError` is raised.
+        :class:`ValueError` is raised.
 
     unit sum before weighting the annual total. If the profile sums to zero,
     a :class:`ValueError` is raised.
@@ -151,9 +125,7 @@ def disaggregate_to_hourly(
 
     """
 
-    import pandas as pd
     from era5_profiles import load_era5_series
-
 
     profile = load_era5_series(cutout_path, variable, region_geom)
     if freq != "H":
@@ -176,10 +148,7 @@ def disaggregate_to_hourly(
     return weights * annual_gj
 
 
-# -------------------------------------------------------
 # Parameters and Precomputed Demand Table
-# -------------------------------------------------------
-
 
 params = get_parameters()
 
@@ -193,7 +162,9 @@ def project_population(
     """Compound population projection using exponential growth."""
 
     if target_year < base_year:
-        raise ValueError("target_year must be greater than or equal to base_year")
+        raise ValueError(
+            "target_year must be greater than or equal to base_year"
+        )
     if annual_growth_rate < 0:
         raise ValueError("annual_growth_rate must be non-negative")
 
@@ -215,7 +186,8 @@ n_regions = len(regions) if regions else 1
 
 # Project total population for each model year
 total_population_by_year = {
-    yr: project_population(base_year, yr, base_population, growth_rate) for yr in years
+    yr: project_population(base_year, yr, base_population, growth_rate)
+    for yr in years
 }
 
 # Derive regional populations, falling back to a uniform split
@@ -226,7 +198,9 @@ for yr in years:
         urban_hh = urban_hh_by_region_year.get(yr, {}).get(reg)
         rural_hh = rural_hh_by_region_year.get(yr, {}).get(reg)
         if urban_hh is not None and rural_hh is not None:
-            pops_for_year[reg] = urban_hh * hh_size_urban + rural_hh * hh_size_rural
+            pops_for_year[reg] = (
+                urban_hh * hh_size_urban + rural_hh * hh_size_rural
+            )
         else:
             pops_for_year[reg] = total_population_by_year[yr] / n_regions
     population_by_year_and_region[yr] = pops_for_year
@@ -239,4 +213,3 @@ total_cooking_demand_GJ_by_year_and_region: dict[int, dict[str, float]] = {
     }
     for yr, region_pops in population_by_year_and_region.items()
 }
-
