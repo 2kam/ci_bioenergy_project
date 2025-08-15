@@ -71,9 +71,9 @@ def main() -> None:
         if args.pypsa_export:
             print("⚠ PyPSA export is currently only supported for the cost pipeline.")
     elif args.pipeline == "cost":
-        mc.run_all_scenarios(args.scenarios, args.years, optimise=args.optimise)
-
-        df_full, _ = mc.run_all_scenarios(args.scenarios, args.years)
+        df_full, _ = mc.run_all_scenarios(
+            args.scenarios, args.years, optimise=args.optimise
+        )
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."
         )
