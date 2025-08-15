@@ -1,8 +1,11 @@
+
 import os
 from functools import lru_cache
+
 from typing import List, Tuple
 
 import pandas as pd
+
 
 
 @lru_cache()
@@ -25,6 +28,16 @@ def load_household_df() -> pd.DataFrame:
     df.columns = df.columns.str.strip()
     df.set_index(["District", "Year"], inplace=True)
     return df
+
+from paths import get_data_path
+
+# Load household projections once
+household_df = pd.read_csv(
+    get_data_path("District-level_Household_Projections.csv")
+)
+household_df.columns = household_df.columns.str.strip()
+household_df.set_index(["District", "Year"], inplace=True)
+
 
 # Base shares can be scenario-dependent later
 base_shares = {

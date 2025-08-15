@@ -2,9 +2,12 @@ import os
 from functools import lru_cache
 import pandas as pd
 
+from paths import get_data_path
+
 # NOTE: Technology adoption is handled in the modelling modules; this
 # configuration module does not import from the deprecated `scripts`
 # package.
+
 
 
 @lru_cache()
@@ -24,6 +27,14 @@ def load_demographics() -> pd.DataFrame:
 
 # Load once for module-level calculations but keep loader for reuse
 demographics = load_demographics()
+=======
+# Load demographic data (district-level household projections)
+demographics = pd.read_csv(
+    get_data_path("District-level_Household_Projections.csv")
+)
+demographics.columns = demographics.columns.str.strip()
+demographics.set_index(['District', 'Year'], inplace=True)
+
 
 # Extract regions (districts)
 regions = sorted(demographics.index.get_level_values("District").unique())

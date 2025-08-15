@@ -49,6 +49,7 @@ from config import (
     MIN_CLEAN_SHARE,
     MAX_FIREWOOD_SHARE,
 )
+from paths import get_data_path
 
 DISCOUNT_RATE = 0.05
 BASE_YEAR = 2025
@@ -221,7 +222,7 @@ def run_all_scenarios(
                     try:
                         demand_series = disaggregate_to_hourly(
                             annual_demand,
-                            os.path.join("data", "era5", "placeholder.nc"),
+                            get_data_path("era5/placeholder.nc"),
                             "t2m",
                             None,
                             freq="4H",
