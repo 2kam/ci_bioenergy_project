@@ -67,6 +67,12 @@ def main() -> None:
         default="none",
         help="Select demand output: annual only or 4-hour ERA5-based series.",
     )
+    parser.add_argument(
+        "--solver",
+        choices=["cbc", "glpk", "gurobi"],
+        default="cbc",
+        help="Select optimisation solver when using --optimise.",
+    )
     args = parser.parse_args()
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
@@ -78,7 +84,11 @@ def main() -> None:
             print("⚠ PyPSA export is currently only supported for the cost pipeline.")
     elif args.pipeline == "cost":
         df_full, _ = mc.run_all_scenarios(
-            args.scenarios, args.years, optimise=args.optimise, timeseries=args.timeseries
+            args.scenarios,
+            args.years,
+            optimise=args.optimise,
+            timeseries=args.timeseries,
+            solver=args.solver,
         )
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."

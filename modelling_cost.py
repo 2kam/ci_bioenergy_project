@@ -181,6 +181,7 @@ def run_all_scenarios(
     years: List[int] | None = None,
     optimise: bool = False,
     timeseries: str = "none",
+    solver: str = "cbc",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """Execute the cost optimisation pipeline across all scenarios and years.
@@ -197,6 +198,9 @@ def run_all_scenarios(
     optimise : bool, optional
         If ``True``, solve a least-cost optimisation using PuLP.
         Otherwise use the fixed adoption shares.
+    solver : str, optional
+        Optimisation solver to use when ``optimise`` is ``True``.
+        Choices are ``"cbc"``, ``"glpk"`` and ``"gurobi"``.
 
     Returns
     -------
@@ -256,6 +260,7 @@ def run_all_scenarios(
                         MIN_CLEAN_SHARE,
                         MAX_FIREWOOD_SHARE,
                         tech_costs,
+                        solver=solver,
                     )
                 else:
                     # Derive energy shares for the district using the adoption model
