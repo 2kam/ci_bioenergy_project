@@ -93,7 +93,9 @@ def _map_energy_categories(energy_by_tech: Dict[str, float]) -> Dict[str, float]
 
 
 def run_all_scenarios(
-    scenarios: List[str] | None = None, years: List[int] | None = None
+    scenarios: List[str] | None = None,
+    years: List[int] | None = None,
+    timeseries: str = "none",
 ) -> Dict[str, pd.DataFrame]:
     """Execute all stock‑flow scenarios and write results to Excel and CSV.
 

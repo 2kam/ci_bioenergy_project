@@ -1,14 +1,22 @@
 """Energy demand calculations for the CI bioenergy project.
 
+
 This module provides simple projections of cooking energy demand based on
 population and household inputs. It also exposes a convenience function to
 disaggregate annual demand to hourly profiles using ERA5 data.
+=======
+
+This module translates demographic inputs into energy demand metrics and
+provides utilities for disaggregating annual demand profiles.
+
 """
 
 from __future__ import annotations
 
 from numbers import Real
 
+
+import pandas as pd
 
 try:
     from spatial_config import (
@@ -29,6 +37,11 @@ else:
         raise ValueError("spatial_config defines no regions")
 
 from data_input import get_parameters
+
+
+
+import pandas as pd
+
 
 
 # -------------------------------------------------------
@@ -70,7 +83,13 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
         raise ValueError("urban_hh must be a non-negative number")
     if not isinstance(rural_hh, Real) or rural_hh < 0:
         raise ValueError("rural_hh must be a non-negative number")
+
     return urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
+
+
+    return (
+        urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
+    )
 
 
 # -------------------------------------------------------
@@ -78,19 +97,78 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
 # -------------------------------------------------------
 
 
-def disaggregate_to_hourly(
-    annual_gj: float, cutout_path: str, variable: str, region_geom
-) -> "pd.Series":
-    """Disaggregate annual energy demand to an hourly series using ERA5 data.
 
-    The ERA5 profile is averaged over the provided region and normalised to
+def disaggregate_to_hourly(
+    annual_gj: float,
+    cutout_path: str,
+    variable: str,
+    region_geom,
+
+    freq: str = "H",
+) -> "pd.Series":
+    """Disaggregate annual energy demand to an hourly or aggregated series using ERA5 data.
+=======
+    freq: str = "1H",
+) -> "pd.Series":
+    """Disaggregate annual energy demand to a time series using ERA5 data.
+
+
+
     unit sum before weighting the annual total. If the profile sums to zero, a
     :class:`ValueError` is raised.
+
+    unit sum before weighting the annual total. If the profile sums to zero,
+    a :class:`ValueError` is raised.
+
+    Parameters
+    ----------
+    annual_gj : float
+        Annual energy demand in gigajoules.
+    cutout_path : str
+        Path to an ERA5 cutout NetCDF file produced with :mod:`atlite`.
+    variable : str
+        Name of the variable inside the cutout, e.g. ``"t2m"`` for
+        2 m temperature.
+    region_geom : shapely geometry or GeoPandas object
+        Geometry of the region for which the profile should be derived.
+    freq : str, optional
+
+        Resampling frequency. Defaults to ``"H"`` for hourly values. Other
+        pandas frequency strings are supported, e.g. ``"4H"`` for four-hour
+        intervals.
+
+        Output temporal resolution. Defaults to hourly (``"1H"``).
+
+
+    Returns
+    -------
+    pandas.Series
+
+        Energy demand in gigajoules at the specified frequency.
+
+        Energy demand series in gigajoules at the requested resolution.
+
+
     """
 
+    import pandas as pd
     from era5_profiles import load_era5_series
 
+
     profile = load_era5_series(cutout_path, variable, region_geom)
+    if freq != "H":
+        profile = profile.resample(freq).sum()
+
+    try:
+        profile = load_era5_series(cutout_path, variable, region_geom)
+        if freq != profile.index.inferred_freq:
+            profile = profile.resample(freq).sum()
+    except Exception:
+        # Fall back to a uniform profile if ERA5 data are unavailable
+        periods = int(pd.Timedelta("365D") / pd.Timedelta(freq))
+        index = pd.date_range("2000-01-01", periods=periods, freq=freq)
+        profile = pd.Series(1.0, index=index)
+
     total = profile.sum()
     if total == 0:
         raise ValueError("ERA5 profile sums to zero; cannot disaggregate")
