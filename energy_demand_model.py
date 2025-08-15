@@ -103,22 +103,9 @@ def disaggregate_to_hourly(
     cutout_path: str,
     variable: str,
     region_geom,
-
     freq: str = "H",
 ) -> "pd.Series":
-    """Disaggregate annual energy demand to an hourly or aggregated series using ERA5 data.
-=======
-    freq: str = "1H",
-) -> "pd.Series":
     """Disaggregate annual energy demand to a time series using ERA5 data.
-
-
-
-    unit sum before weighting the annual total. If the profile sums to zero, a
-    :class:`ValueError` is raised.
-
-    unit sum before weighting the annual total. If the profile sums to zero,
-    a :class:`ValueError` is raised.
 
     Parameters
     ----------
@@ -132,32 +119,17 @@ def disaggregate_to_hourly(
     region_geom : shapely geometry or GeoPandas object
         Geometry of the region for which the profile should be derived.
     freq : str, optional
-
-        Resampling frequency. Defaults to ``"H"`` for hourly values. Other
-        pandas frequency strings are supported, e.g. ``"4H"`` for four-hour
-        intervals.
-
-        Output temporal resolution. Defaults to hourly (``"1H"``).
-
+        Resampling frequency. Defaults to ``"H"`` for hourly values.
+        Other pandas frequency strings are supported, e.g. ``"4H"`` for
+        four-hour intervals.
 
     Returns
     -------
     pandas.Series
-
-        Energy demand in gigajoules at the specified frequency.
-
         Energy demand series in gigajoules at the requested resolution.
-
-
     """
 
-    import pandas as pd
     from era5_profiles import load_era5_series
-
-
-    profile = load_era5_series(cutout_path, variable, region_geom)
-    if freq != "H":
-        profile = profile.resample(freq).sum()
 
     try:
         profile = load_era5_series(cutout_path, variable, region_geom)
