@@ -15,6 +15,12 @@ try:
         URBAN_DEMAND_GJ_PER_HH,
         RURAL_DEMAND_GJ_PER_HH,
     )
+except Exception:  # pragma: no cover - fallback if data files are unavailable
+    regions = []
+    URBAN_DEMAND_GJ_PER_HH = RURAL_DEMAND_GJ_PER_HH = 0
+from data_input import get_parameters
+import pandas as pd
+
 except Exception:  # pragma: no cover - fallback for minimal environments
     regions = []
     URBAN_DEMAND_GJ_PER_HH = 0.0
@@ -112,6 +118,7 @@ def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, re
     pandas.Series
         Hourly energy demand in gigajoules.
     """
+
     import pandas as pd  # Imported lazily to avoid heavy dependency at module import
     from era5_profiles import load_era5_series
 
@@ -129,8 +136,44 @@ def disaggregate_to_hourly(annual_gj: float, cutout_path: str, variable: str, re
 
 params = get_parameters()
 
-def project_population(base_year: int, target_year: int, base_population: int, annual_growth_rate: float) -> float:
-    """Compound population projection using exponential growth."""
+def project_population(
+    base_year: int,
+    target_year: int,
+    base_population: int,
+    annual_growth_rate: float,
+) -> float:
+    """Compound population projection using exponential growth.
+
+    Parameters
+    ----------
+    base_year : int
+        The starting year for the projection.
+    target_year : int
+        The future year for which population should be estimated.
+        Must be greater than or equal to ``base_year``.
+    base_population : int
+        Population in ``base_year``.
+    annual_growth_rate : float
+        Fractional annual population growth rate. Must be non‑negative.
+
+    Returns
+    -------
+    float
+        Projected population in ``target_year``. If ``target_year`` equals
+        ``base_year``, the base population is returned (zero growth).
+
+    Raises
+    ------
+    ValueError
+        If ``target_year`` is before ``base_year`` or if
+        ``annual_growth_rate`` is negative.
+    """
+
+    if target_year < base_year:
+        raise ValueError("target_year must be greater than or equal to base_year")
+    if annual_growth_rate < 0:
+        raise ValueError("annual_growth_rate must be non-negative")
+
     years = target_year - base_year
     return base_population * ((1 + annual_growth_rate) ** years)
 
@@ -143,21 +186,25 @@ per_capita_demand = params["cooking_energy_demand_per_capita_GJ_yr"]
 # Define model years
 years = [2030, 2040, 2050]
 
-# Uniform regional population assumption
-n_regions = len(regions)
-population_by_year_and_region = {
-    yr: {
-        reg: project_population(base_year, yr, base_population, growth_rate) / n_regions
-        for reg in regions
+if regions:
+    # Uniform regional population assumption
+    n_regions = len(regions)
+    population_by_year_and_region = {
+        yr: {
+            reg: project_population(base_year, yr, base_population, growth_rate) / n_regions
+            for reg in regions
+        }
+        for yr in years
     }
-    for yr in years
-}
 
-# Total cooking energy demand by year and region (GJ)
-total_cooking_demand_GJ_by_year_and_region = {
-    yr: {
-        reg: project_energy_demand(pop, per_capita_demand)
-        for reg, pop in region_pops.items()
+    # Total cooking energy demand by year and region (GJ)
+    total_cooking_demand_GJ_by_year_and_region = {
+        yr: {
+            reg: project_energy_demand(pop, per_capita_demand)
+            for reg, pop in region_pops.items()
+        }
+        for yr, region_pops in population_by_year_and_region.items()
     }
-    for yr, region_pops in population_by_year_and_region.items()
-}
+else:  # pragma: no cover - used only when spatial data missing
+    population_by_year_and_region = {}
+    total_cooking_demand_GJ_by_year_and_region = {}
