@@ -1,19 +1,13 @@
-"""Energy demand calculations for the CI bioenergy project."""
+"""Energy demand calculations for the CI bioenergy project.
+
+This module provides simple projections of cooking energy demand based on
+population and household inputs. It also exposes a convenience function to
+disaggregate annual demand to hourly profiles using ERA5 data.
+"""
 
 from __future__ import annotations
 
 from numbers import Real
-
-"""
-energy_demand_model.py
-
-This module contains functions to translate demographic inputs into
-energy demand metrics. It includes a function to project household
-cooking energy demand from per-capita values, and precomputed lookup
-tables for regional demand by year.
-"""
-
-from __future__ import annotations
 
 
 try:
@@ -24,20 +18,17 @@ try:
         urban_hh_by_region_year,
         rural_hh_by_region_year,
     )
-except Exception:  # pragma: no cover - allow import in minimal environments
-=======
 except Exception:  # pragma: no cover - fallback if data files are unavailable
-    regions = []
+    regions: list[str] = []
     URBAN_DEMAND_GJ_PER_HH = 0.0
     RURAL_DEMAND_GJ_PER_HH = 0.0
-    urban_hh_by_region_year = {}
-    rural_hh_by_region_year = {}
+    urban_hh_by_region_year: dict[int, dict[str, float]] = {}
+    rural_hh_by_region_year: dict[int, dict[str, float]] = {}
+else:
+    if not regions:
+        raise ValueError("spatial_config defines no regions")
 
 from data_input import get_parameters
-
-
-import pandas as pd
-from numbers import Real
 
 
 # -------------------------------------------------------
@@ -46,13 +37,7 @@ from numbers import Real
 
 
 def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) -> float:
-    """Return total annual cooking energy demand."""
-
     """Return total annual cooking energy demand.
-
-    Energy demand is assumed to scale linearly with population. This
-    function simply multiplies the total population by a per-capita
-    energy demand (in gigajoules per person per year).
 
     Parameters
     ----------
@@ -70,49 +55,23 @@ def project_energy_demand(total_pop: float, cooking_demand_per_capita: float) ->
     if not isinstance(total_pop, Real) or total_pop < 0:
         raise ValueError("total_pop must be a non-negative number")
     if not isinstance(cooking_demand_per_capita, Real) or cooking_demand_per_capita < 0:
-        raise ValueError(
-            "cooking_demand_per_capita must be a non-negative number"
-        )
+        raise ValueError("cooking_demand_per_capita must be a non-negative number")
     return total_pop * cooking_demand_per_capita
 
 
 def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
-    """Return total annual cooking energy demand given household counts."""
-
     """Return total annual cooking energy demand given household counts.
 
-    Multiplies the number of urban and rural households by their
-    respective per‑household demand constants defined in
-    :mod:`spatial_config`.
-
-    Parameters
-    ----------
-    urban_hh : float
-        Number of urban households in the year of interest.
-    rural_hh : float
-        Number of rural households in the year of interest.
-
-    Returns
-    -------
-    float
-        Total annual cooking energy demand in gigajoules (GJ).
+    Multiplies the number of urban and rural households by their respective
+    per‑household demand constants defined in :mod:`spatial_config`.
     """
 
     if not isinstance(urban_hh, Real) or urban_hh < 0:
         raise ValueError("urban_hh must be a non-negative number")
     if not isinstance(rural_hh, Real) or rural_hh < 0:
         raise ValueError("rural_hh must be a non-negative number")
-    return (
-        urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
-    )
+    return urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
 
-
-def disaggregate_to_hourly(
-    annual_gj: float, cutout_path: str, variable: str, region_geom
-) -> "pd.Series":
-    """Disaggregate annual demand to an hourly series using ERA5 data."""
-
-    import pandas as pd  # Imported lazily
 
 # -------------------------------------------------------
 # Function: Disaggregate Annual Demand to Hourly Series
@@ -125,25 +84,8 @@ def disaggregate_to_hourly(
     """Disaggregate annual energy demand to an hourly series using ERA5 data.
 
     The ERA5 profile is averaged over the provided region and normalised to
-    unit sum before weighting the annual total. If the profile sums to zero,
-    a :class:`ValueError` is raised.
-
-    Parameters
-    ----------
-    annual_gj : float
-        Annual energy demand in gigajoules.
-    cutout_path : str
-        Path to an ERA5 cutout NetCDF file produced with :mod:`atlite`.
-    variable : str
-        Name of the variable inside the cutout, e.g. ``"t2m"`` for
-        2 m temperature.
-    region_geom : shapely geometry or GeoPandas object
-        Geometry of the region for which the profile should be derived.
-
-    Returns
-    -------
-    pandas.Series
-        Hourly energy demand in gigajoules.
+    unit sum before weighting the annual total. If the profile sums to zero, a
+    :class:`ValueError` is raised.
     """
 
     from era5_profiles import load_era5_series
@@ -156,11 +98,9 @@ def disaggregate_to_hourly(
     return weights * annual_gj
 
 
-
 # -------------------------------------------------------
 # Parameters and Precomputed Demand Table
 # -------------------------------------------------------
-
 
 
 params = get_parameters()
@@ -184,9 +124,6 @@ def project_population(
 
 
 # Base assumptions (defaults enable importing without full parameter set)
-
-# Set base assumptions
-
 base_year = 2025
 base_population = params.get("population_total_2025", 0)
 growth_rate = params.get("population_growth_rate_annual", 0)
@@ -204,9 +141,9 @@ total_population_by_year = {
 }
 
 # Derive regional populations, falling back to a uniform split
-population_by_year_and_region = {}
+population_by_year_and_region: dict[int, dict[str, float]] = {}
 for yr in years:
-    pops_for_year = {}
+    pops_for_year: dict[str, float] = {}
     for reg in regions:
         urban_hh = urban_hh_by_region_year.get(yr, {}).get(reg)
         rural_hh = rural_hh_by_region_year.get(yr, {}).get(reg)
@@ -217,7 +154,7 @@ for yr in years:
     population_by_year_and_region[yr] = pops_for_year
 
 # Total cooking energy demand by year and region (GJ)
-total_cooking_demand_GJ_by_year_and_region = {
+total_cooking_demand_GJ_by_year_and_region: dict[int, dict[str, float]] = {
     yr: {
         reg: project_energy_demand(pop, per_capita_demand)
         for reg, pop in region_pops.items()
