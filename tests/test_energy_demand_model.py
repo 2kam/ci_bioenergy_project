@@ -11,7 +11,7 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 def _import_edm(monkeypatch, series):
     spatial = types.ModuleType("spatial_config")
-    spatial.regions = []
+    spatial.regions = ["dummy"]
     spatial.URBAN_DEMAND_GJ_PER_HH = 0
     spatial.RURAL_DEMAND_GJ_PER_HH = 0
     spatial.urban_hh_by_region_year = {}
@@ -43,6 +43,22 @@ def test_disaggregate_to_hourly_nonzero_profile(monkeypatch):
     pd.testing.assert_series_equal(result, expected)
 
 
+
+def test_empty_regions_raises_value_error(monkeypatch):
+    spatial = types.ModuleType("spatial_config")
+    spatial.regions = []
+    spatial.URBAN_DEMAND_GJ_PER_HH = 0
+    spatial.RURAL_DEMAND_GJ_PER_HH = 0
+    spatial.urban_hh_by_region_year = {}
+    spatial.rural_hh_by_region_year = {}
+
+    sys.modules.pop("energy_demand_model", None)
+    sys.modules.pop("spatial_config", None)
+    monkeypatch.setitem(sys.modules, "spatial_config", spatial)
+
+    with pytest.raises(ValueError):
+        importlib.import_module("energy_demand_model")
+
 def test_disaggregate_to_hourly_resample(monkeypatch):
     series = pd.Series(
         [1, 1, 1, 1], index=pd.date_range("2020-01-01", periods=4, freq="h")
@@ -54,4 +70,5 @@ def test_disaggregate_to_hourly_resample(monkeypatch):
         [8.0], index=pd.date_range("2020-01-01", periods=1, freq="4H")
     )
     pd.testing.assert_series_equal(result, expected)
+
 
