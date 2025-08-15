@@ -1,12 +1,16 @@
 import os
 import pandas as pd
 
+from paths import get_data_path
+
 # NOTE: Technology adoption is handled in the modelling modules; this
 # configuration module does not import from the deprecated `scripts`
 # package.
 
 # Load demographic data (district-level household projections)
-demographics = pd.read_csv("data/District-level_Household_Projections.csv")
+demographics = pd.read_csv(
+    get_data_path("District-level_Household_Projections.csv")
+)
 demographics.columns = demographics.columns.str.strip()
 demographics.set_index(['District', 'Year'], inplace=True)
 

@@ -18,6 +18,8 @@ from typing import List
 
 import pandas as pd
 
+from paths import get_data_path
+
 
 def load_projection_files(pattern: str) -> pd.DataFrame:
     """Load and combine household projection CSV files.
@@ -91,7 +93,7 @@ def plot_differences(df: pd.DataFrame, out_path: str) -> None:
 
 
 def main(plot: bool = False) -> None:
-    pattern = os.path.join("data", "District-level_Household_Projections*.csv")
+    pattern = str(get_data_path("District-level_Household_Projections*.csv"))
     df = load_projection_files(pattern)
 
     os.makedirs("results", exist_ok=True)

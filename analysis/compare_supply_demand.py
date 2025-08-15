@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from spatial_config import compute_demand_by_region_year
+from paths import get_data_path
 
 TARGET_MULTIPLIERS = {2030: 0.58, 2040: 0.20, 2050: 0.05}
 BASE_DEMAND_YEAR = 2023
@@ -18,7 +19,9 @@ BASE_DEMAND_YEAR = 2023
 
 def load_supply():
     """Load available biomass supply per district in GJ."""
-    supply_df = pd.read_csv("data/regional_supply_full_corrected.csv")
+    supply_df = pd.read_csv(
+        get_data_path("regional_supply_full_corrected.csv")
+    )
     supply = supply_df.groupby("District")["Available_GJ"].sum()
     supply.name = "supply_gj"
     return supply
