@@ -86,12 +86,6 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
 
     return urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
 
-
-    return (
-        urban_hh * URBAN_DEMAND_GJ_PER_HH + rural_hh * RURAL_DEMAND_GJ_PER_HH
-    )
-
-
 # -------------------------------------------------------
 # Function: Disaggregate Annual Demand to Hourly Series
 # -------------------------------------------------------
