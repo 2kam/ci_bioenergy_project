@@ -28,6 +28,8 @@ to run the cost optimisation for all scenarios and years.
 from __future__ import annotations
 
 import os
+import json
+from datetime import datetime
 from functools import lru_cache
 from typing import Dict, List, Tuple
 import pandas as pd
@@ -327,7 +329,10 @@ def run_all_scenarios(
     df_full = pd.concat(all_rows, ignore_index=True) if all_rows else pd.DataFrame()
     df_summary = pd.DataFrame(summary_rows)
     # Write outputs to Excel and per-scenario CSVs
-    output_path = "results/ci_bioenergy_techpathways.xlsx"
+    out_dir = os.path.join("results", "cost")
+    os.makedirs(out_dir, exist_ok=True)
+
+    output_path = os.path.join(out_dir, "ci_bioenergy_techpathways.xlsx")
     with pd.ExcelWriter(output_path) as writer:
         if not df_full.empty:
             df_full.to_excel(writer, sheet_name="Details", index=False)
@@ -336,11 +341,23 @@ def run_all_scenarios(
     if not df_full.empty:
         for scenario in scenarios:
             df_full[df_full["Scenario"] == scenario].to_csv(
-                os.path.join("results", f"techpathways_{scenario}.csv"),
+                os.path.join(out_dir, f"{scenario}_detail.csv"),
                 index=False,
             )
             df_summary[df_summary["Scenario"] == scenario].to_csv(
-                os.path.join("results", f"techpathways_summary_{scenario}.csv"),
+                os.path.join(out_dir, f"{scenario}_summary.csv"),
                 index=False,
             )
+            meta = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "scenario": scenario,
+                "years": years,
+                "parameters": {
+                    "optimise": optimise,
+                    "timeseries": timeseries,
+                    "solver": solver,
+                },
+            }
+            with open(os.path.join(out_dir, f"{scenario}_metadata.json"), "w") as f:
+                json.dump(meta, f)
     return df_full, df_summary

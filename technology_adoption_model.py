@@ -1,5 +1,7 @@
 
 import os
+import json
+from datetime import datetime
 from functools import lru_cache
 
 from typing import List, Tuple
@@ -235,7 +237,18 @@ def generate_adoption_tables(
             records.append(df)
 
     result = pd.concat(records)
-    os.makedirs("results", exist_ok=True)
-    result.to_csv(os.path.join("results", f"adoption_{scenario}.csv"))
+    out_dir = os.path.join("results", "adoption")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"{scenario}.csv")
+    result.to_csv(out_path)
+
+    meta = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "scenario": scenario,
+        "years": years,
+        "parameters": params,
+    }
+    with open(os.path.join(out_dir, f"{scenario}_metadata.json"), "w") as f:
+        json.dump(meta, f)
     return result
 

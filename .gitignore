@@ -32,5 +32,17 @@ results/*
 !results/.gitignore
 
 !results/aggregate_techpathways.py
+!results/demand/
+!results/demand/.gitkeep
+!results/adoption/
+!results/adoption/.gitkeep
+!results/cost/
+!results/cost/.gitkeep
+!results/supply_comparison/
+!results/supply_comparison/.gitkeep
+!results/demand/.gitkeep
+!results/adoption/.gitkeep
+!results/cost/.gitkeep
+!results/supply_comparison/.gitkeep
 
 DOC.md

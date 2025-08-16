@@ -38,7 +38,7 @@ import pandas as pd
 
 from data_input import get_parameters
 from population_urbanization_model import calculate_population_urbanization
-from energy_demand_model import project_household_energy_demand
+from energy_demand_model import project_household_energy_demand, export_demand_table
 from technology_adoption_model import (
     get_tech_mix_by_scenario,
     generate_adoption_tables,
@@ -129,6 +129,9 @@ def run_all_scenarios(
     params = get_parameters()
     os.makedirs("results", exist_ok=True)
     results_per_scenario: Dict[str, pd.DataFrame] = {}
+
+    # Persist demand table for transparency
+    export_demand_table(years)
 
     for scenario in scenarios:
         # Persist adoption metrics for the scenario so they can be joined

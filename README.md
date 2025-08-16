@@ -23,6 +23,19 @@ harmonised list of technologies (`firewood`, `charcoal`,
 `lpg`, `improved_biomass`). Scenario names are normalised to lowercase
 with underscores.
 
+## Methodology and data lineage
+
+The modelling suite emits intermediate datasets for transparency:
+
+1. **Demand** – regional demand projections written to `results/demand/`.
+2. **Adoption** – technology shares and energy by region saved under `results/adoption/`.
+3. **Cost** – per‑scenario cost breakdowns output to `results/cost/`.
+4. **Supply comparison** – biomass supply versus scaled demand stored in `results/supply_comparison/`.
+
+Each directory includes a companion `*_metadata.json` file capturing the
+generation timestamp and key parameters. These metadata drive the light‑
+weight report produced via `make docs`.
+
 ## Data flow
 
 ```mermaid
@@ -48,6 +61,7 @@ regional household demand and writes optional bus metadata.  The demand
 figures feed into the energy demand and cost models as well as auxiliary
 analysis scripts.  The generated ``buses.csv`` is consumed by the
 PyPSA‑Earth export utilities.
+
 
 ## Prerequisites
 

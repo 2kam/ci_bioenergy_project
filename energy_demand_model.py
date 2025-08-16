@@ -5,6 +5,9 @@ from __future__ import annotations
 
 from numbers import Real
 
+import os
+import json
+from datetime import datetime
 import pandas as pd
 
 try:
@@ -153,6 +156,42 @@ def disaggregate_to_hourly(
 # Parameters and Precomputed Demand Table
 
 params = get_parameters()
+
+
+def export_demand_table(years: list[int]) -> pd.DataFrame:
+    """Write regional demand projections to ``results/demand``.
+
+    The exported CSV includes one row per region and year while a companion
+    JSON file records the timestamp and key parameters used to generate the
+    data. The function returns the demand table for further processing.
+    """
+
+    rows = []
+    for yr in years:
+        region_pops = population_by_year_and_region.get(yr, {})
+        for reg, pop in region_pops.items():
+            demand = project_energy_demand(pop, per_capita_demand)
+            rows.append({"region": reg, "year": yr, "demand_GJ": demand})
+
+    df = pd.DataFrame(rows)
+    out_dir = os.path.join("results", "demand")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "demand.csv")
+    df.to_csv(out_path, index=False)
+
+    meta = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "parameters": {
+            "per_capita_demand_GJ": per_capita_demand,
+            "base_year": base_year,
+            "base_population": base_population,
+            "growth_rate": growth_rate,
+        },
+        "years": years,
+    }
+    with open(os.path.join(out_dir, "demand_metadata.json"), "w") as f:
+        json.dump(meta, f)
+    return df
 
 
 def project_population(
