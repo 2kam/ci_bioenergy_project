@@ -1,0 +1,12 @@
+scenarios:
+  - bau
+  - clean_push
+  - biogas_incentive
+years:
+  - 2030
+  - 2040
+  - 2050
+constraints:
+  min_clean_share: 0.4
+  max_firewood_share: 0.3
+solver: cbc
