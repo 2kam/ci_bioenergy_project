@@ -10,7 +10,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from spatial_config import compute_demand_by_region_year
+from demand import get_demand
+from demand.demographics import demand_by_region_year
 from paths import get_data_path
 
 TARGET_MULTIPLIERS = {2030: 0.58, 2040: 0.20, 2050: 0.05}
@@ -29,11 +30,12 @@ def load_supply():
 
 def compute_scaled_demand(target_year: int) -> pd.Series:
     """Return scaled demand for ``target_year`` based on 2023 demand."""
-    demand_by_year = compute_demand_by_region_year()
     base_year = BASE_DEMAND_YEAR
-    if base_year not in demand_by_year:
-        base_year = min(demand_by_year)
-    base_demand = pd.Series(demand_by_year[base_year], name=f"demand_{base_year}")
+    demand = get_demand(base_year)
+    if not demand:
+        base_year = min(demand_by_region_year)
+        demand = get_demand(base_year)
+    base_demand = pd.Series(demand, name=f"demand_{base_year}")
     multiplier = TARGET_MULTIPLIERS.get(target_year)
     if multiplier is None:
         raise ValueError(f"Unsupported target year: {target_year}")

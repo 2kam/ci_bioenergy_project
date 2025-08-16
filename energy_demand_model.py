@@ -8,7 +8,7 @@ from numbers import Real
 import pandas as pd
 
 try:
-    from spatial_config import (
+    from demand import (
         regions,
         URBAN_DEMAND_GJ_PER_HH,
         RURAL_DEMAND_GJ_PER_HH,
@@ -23,7 +23,7 @@ except Exception:  # pragma: no cover - fallback if data files are unavailable
     rural_hh_by_region_year: dict[int, dict[str, float]] = {}
 else:
     if not regions:
-        raise ValueError("spatial_config defines no regions")
+        raise ValueError("demand defines no regions")
 
 from data_input import get_parameters
 
@@ -62,7 +62,7 @@ def project_household_energy_demand(urban_hh: float, rural_hh: float) -> float:
     """Return total annual cooking energy demand given household counts.
 
     Multiplies the number of urban and rural households by their respective
-    per‑household demand constants defined in :mod:`spatial_config`.
+    per‑household demand constants defined in :mod:`demand`.
     """
 
     if not isinstance(urban_hh, Real) or urban_hh < 0:

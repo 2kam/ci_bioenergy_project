@@ -23,6 +23,32 @@ harmonised list of technologies (`firewood`, `charcoal`,
 `lpg`, `improved_biomass`). Scenario names are normalised to lowercase
 with underscores.
 
+## Data flow
+
+```mermaid
+flowchart LR
+    A[data/District-level_Household_Projections.csv]
+    B[demand.demographics\n(load_demographics, compute_*)]
+    C[results/buses.csv]
+    D[energy_demand_model]
+    E[modelling_cost]
+    F[analysis scripts]
+    G[pypsa_export]
+
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+    B --> F
+    C --> G
+```
+
+The :mod:`demand` package loads demographic projections, derives
+regional household demand and writes optional bus metadata.  The demand
+figures feed into the energy demand and cost models as well as auxiliary
+analysis scripts.  The generated ``buses.csv`` is consumed by the
+PyPSA‑Earth export utilities.
+
 ## Prerequisites
 
 * Python 3.8 or later.

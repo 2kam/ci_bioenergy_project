@@ -32,7 +32,7 @@ from functools import lru_cache
 from typing import Dict, List, Tuple
 import pandas as pd
 
-from spatial_config import (
+from demand import (
     regions,
     demand_by_region_year,
     urban_hh_by_region_year,
