@@ -1,3 +1,12 @@
-# Ignore generated comparison outputs
+# Ignore generated outputs but keep directory placeholders and helper scripts
 *
 !.gitignore
+!aggregate_techpathways.py
+!adoption/
+!adoption/.gitkeep
+!cost/
+!cost/.gitkeep
+!demand/
+!demand/.gitkeep
+!supply_comparison/
+!supply_comparison/.gitkeep

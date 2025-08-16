@@ -1,5 +1,7 @@
 import argparse
 import os
+import json
+from datetime import datetime
 import sys
 from pathlib import Path
 
@@ -57,10 +59,18 @@ def main():
     args = parser.parse_args()
 
     df = compare_supply_demand(args.target_year)
-    out_dir = "results"
+    out_dir = os.path.join("results", "supply_comparison")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"supply_demand_{args.target_year}.csv")
     df.to_csv(out_path)
+
+    meta = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "parameters": {"target_year": args.target_year},
+    }
+    with open(os.path.join(out_dir, f"supply_demand_{args.target_year}_metadata.json"), "w") as f:
+        json.dump(meta, f)
+
     print(df.sort_values("surplus_deficit_gj", ascending=False).to_string())
     print(f"\nResults written to {out_path}")
 
