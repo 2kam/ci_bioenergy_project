@@ -5,6 +5,8 @@ import types
 
 import pandas as pd
 
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 
 def _prepare_modules(monkeypatch):
     """Patch data loading and import target modules."""
@@ -26,24 +28,25 @@ def _prepare_modules(monkeypatch):
     era5_stub.load_era5_series = lambda *args, **kwargs: None
     monkeypatch.setitem(sys.modules, "era5_profiles", era5_stub)
 
-    monkeypatch.delitem(sys.modules, "spatial_config", raising=False)
+    monkeypatch.delitem(sys.modules, "demand", raising=False)
+    monkeypatch.delitem(sys.modules, "demand.demographics", raising=False)
     monkeypatch.delitem(sys.modules, "energy_demand_model", raising=False)
 
-    spatial_config = importlib.import_module("spatial_config")
+    demand_module = importlib.import_module("demand")
     energy_demand_model = importlib.import_module("energy_demand_model")
-    return spatial_config, energy_demand_model
+    return demand_module, energy_demand_model
 
 
 def test_cooking_demand_increases(monkeypatch):
-    spatial_config, energy_demand_model = _prepare_modules(monkeypatch)
+    demand_module, energy_demand_model = _prepare_modules(monkeypatch)
 
     base_year = 2030
     later_years = [2040, 2050]
 
     demands = energy_demand_model.total_cooking_demand_GJ_by_year_and_region
-    demand_by_year = spatial_config.demand_by_region_year
+    demand_by_year = demand_module.demand_by_region_year
 
-    for region in spatial_config.regions:
+    for region in demand_module.regions:
         base_total = demands[base_year][region]
         base_regional = demand_by_year[base_year][region]
         for year in later_years:
