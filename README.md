@@ -36,6 +36,33 @@ Each directory includes a companion `*_metadata.json` file capturing the
 generation timestamp and key parameters. These metadata drive the light‑
 weight report produced via `make docs`.
 
+## Data flow
+
+```mermaid
+flowchart LR
+    A[data/District-level_Household_Projections.csv]
+    B[demand.demographics\n(load_demographics, compute_*)]
+    C[results/buses.csv]
+    D[energy_demand_model]
+    E[modelling_cost]
+    F[analysis scripts]
+    G[pypsa_export]
+
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+    B --> F
+    C --> G
+```
+
+The :mod:`demand` package loads demographic projections, derives
+regional household demand and writes optional bus metadata.  The demand
+figures feed into the energy demand and cost models as well as auxiliary
+analysis scripts.  The generated ``buses.csv`` is consumed by the
+PyPSA‑Earth export utilities.
+
+
 ## Prerequisites
 
 * Python 3.8 or later.
@@ -45,6 +72,26 @@ weight report produced via `make docs`.
   CBC ships with PuLP, while ``--solver glpk`` requires the external
   ``glpsol`` binary and ``--solver gurobi`` needs a licensed Gurobi
   installation.
+
+## Configuration
+
+Default scenarios, model years, policy constraints and solver
+preferences are defined in `config/scenarios.yaml`. An equivalent JSON
+file (`config/scenarios.json`) is also provided. The YAML structure is
+straightforward::
+
+```yaml
+scenarios: [bau, clean_push, biogas_incentive]
+years: [2030, 2040, 2050]
+constraints:
+  min_clean_share: 0.4
+  max_firewood_share: 0.3
+solver: cbc
+```
+
+To use a custom configuration, pass ``--config path/to/file.yaml`` to
+``main.py``. Individual options can be overridden on the command line,
+e.g. ``--min-clean-share 0.5``.
 
 ## Preparing ERA5 weather cutouts
 
@@ -115,7 +162,8 @@ outside the repository (e.g. in a release asset or shared drive).
    technology and a `Summary` sheet with total costs by scenario and
    year. When optimisation is enabled, policy constraints for the
    minimum clean share and maximum firewood share are taken from
-   `config.py`.
+   the configuration file (`config/scenarios.yaml`) and can be
+   overridden with ``--min-clean-share`` or ``--max-firewood-share``.
 
    Append ``--pypsa-export`` to additionally produce CSV files
    compatible with `PyPSA‑Earth <https://pypsa-earth.readthedocs.io/>`_:

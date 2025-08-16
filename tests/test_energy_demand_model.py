@@ -10,13 +10,13 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 
 def _import_edm(monkeypatch, series):
-    spatial = types.ModuleType("spatial_config")
-    spatial.regions = ["dummy"]
-    spatial.URBAN_DEMAND_GJ_PER_HH = 0
-    spatial.RURAL_DEMAND_GJ_PER_HH = 0
-    spatial.urban_hh_by_region_year = {}
-    spatial.rural_hh_by_region_year = {}
-    monkeypatch.setitem(sys.modules, "spatial_config", spatial)
+    demand = types.ModuleType("demand")
+    demand.regions = ["dummy"]
+    demand.URBAN_DEMAND_GJ_PER_HH = 0
+    demand.RURAL_DEMAND_GJ_PER_HH = 0
+    demand.urban_hh_by_region_year = {}
+    demand.rural_hh_by_region_year = {}
+    monkeypatch.setitem(sys.modules, "demand", demand)
 
     era5 = types.ModuleType("era5_profiles")
     era5.load_era5_series = lambda *a, **k: series
@@ -45,16 +45,16 @@ def test_disaggregate_to_hourly_nonzero_profile(monkeypatch):
 
 
 def test_empty_regions_raises_value_error(monkeypatch):
-    spatial = types.ModuleType("spatial_config")
-    spatial.regions = []
-    spatial.URBAN_DEMAND_GJ_PER_HH = 0
-    spatial.RURAL_DEMAND_GJ_PER_HH = 0
-    spatial.urban_hh_by_region_year = {}
-    spatial.rural_hh_by_region_year = {}
+    demand = types.ModuleType("demand")
+    demand.regions = []
+    demand.URBAN_DEMAND_GJ_PER_HH = 0
+    demand.RURAL_DEMAND_GJ_PER_HH = 0
+    demand.urban_hh_by_region_year = {}
+    demand.rural_hh_by_region_year = {}
 
     sys.modules.pop("energy_demand_model", None)
-    sys.modules.pop("spatial_config", None)
-    monkeypatch.setitem(sys.modules, "spatial_config", spatial)
+    sys.modules.pop("demand", None)
+    monkeypatch.setitem(sys.modules, "demand", demand)
 
     with pytest.raises(ValueError):
         importlib.import_module("energy_demand_model")

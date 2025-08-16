@@ -12,7 +12,7 @@ household consumption intensities, allocating that demand across
 different technologies under scenario assumptions and computing the
 resulting emissions.
 
-Scenarios are defined in ``SCENARIOS`` and currently include:
+Scenarios are defined in the configuration file and currently include:
 
 * ``bau`` – business as usual adoption trajectories
 * ``clean_push`` – concerted push for clean alternatives
@@ -44,7 +44,7 @@ from technology_adoption_model import (
     generate_adoption_tables,
 )
 from ghg_emissions_model import calculate_emissions
-from config import SCENARIOS, YEARS
+from config import CONFIG, load_config
 
 
 def _map_energy_categories(energy_by_tech: Dict[str, float]) -> Dict[str, float]:
@@ -96,16 +96,21 @@ def run_all_scenarios(
     scenarios: List[str] | None = None,
     years: List[int] | None = None,
     timeseries: str = "none",
+    config: Dict | str | None = None,
 ) -> Dict[str, pd.DataFrame]:
     """Execute all stock‑flow scenarios and write results to Excel and CSV.
 
     Parameters
     ----------
     scenarios : list, optional
-        Scenario names to evaluate. Defaults to :data:`config.SCENARIOS`.
+        Scenario names to evaluate. Defaults to the values from the
+        configuration file.
     years : list, optional
-        Model years to process. Defaults to :data:`config.YEARS`.
-
+        Model years to process. Defaults to the configuration file.
+    config : dict or str, optional
+        Configuration dictionary or path to a YAML/JSON file. If omitted
+        the built-in defaults are used.
+    
     Returns
     -------
     dict
@@ -114,8 +119,13 @@ def run_all_scenarios(
         energy demand, energy allocation by technology and detailed
         emission estimates.
     """
-    scenarios = scenarios or SCENARIOS
-    years = years or YEARS
+    cfg = (
+        load_config(config) if isinstance(config, str)
+        else config if isinstance(config, dict)
+        else CONFIG
+    )
+    scenarios = scenarios or cfg.get("scenarios", [])
+    years = years or cfg.get("years", [])
     params = get_parameters()
     os.makedirs("results", exist_ok=True)
     results_per_scenario: Dict[str, pd.DataFrame] = {}
