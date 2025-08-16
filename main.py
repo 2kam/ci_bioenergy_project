@@ -25,7 +25,7 @@ import os
 
 import modelling_stock_flow as msf
 import modelling_cost as mc
-from config import SCENARIOS, YEARS
+from config import load_config
 
 
 def main() -> None:
@@ -39,17 +39,23 @@ def main() -> None:
         help="Select which modelling pipeline to run: 'stockflow' or 'cost'.",
     )
     parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to a YAML/JSON configuration file. Defaults to built-in config.",
+    )
+    parser.add_argument(
         "--scenarios",
         nargs="+",
-        default=SCENARIOS,
-        help="Scenarios to evaluate. Defaults to all configured scenarios.",
+        default=None,
+        help="Scenarios to evaluate. Defaults to those in the configuration file.",
     )
     parser.add_argument(
         "--years",
         nargs="+",
         type=int,
-        default=YEARS,
-        help="Model years to evaluate. Defaults to all configured years.",
+        default=None,
+        help="Model years to evaluate. Defaults to the configuration file.",
     )
     parser.add_argument(
         "--optimise",
@@ -70,13 +76,38 @@ def main() -> None:
     parser.add_argument(
         "--solver",
         choices=["cbc", "glpk", "gurobi"],
-        default="cbc",
-        help="Select optimisation solver when using --optimise.",
+        default=None,
+        help="Select optimisation solver when using --optimise. Defaults to config.",
+    )
+    parser.add_argument(
+        "--min-clean-share",
+        type=float,
+        default=None,
+        help="Override minimum clean-technology share (fraction).",
+    )
+    parser.add_argument(
+        "--max-firewood-share",
+        type=float,
+        default=None,
+        help="Override maximum traditional firewood share (fraction).",
     )
     args = parser.parse_args()
+    cfg = load_config(args.config)
+    scenarios = args.scenarios or cfg.get("scenarios", [])
+    years = args.years or cfg.get("years", [])
+    solver = args.solver or cfg.get("solver", "cbc")
+    constraints = cfg.get("constraints", {})
+    min_clean_share = args.min_clean_share
+    if min_clean_share is None:
+        min_clean_share = constraints.get("min_clean_share")
+    max_firewood_share = args.max_firewood_share
+    if max_firewood_share is None:
+        max_firewood_share = constraints.get("max_firewood_share")
     os.makedirs("results", exist_ok=True)
     if args.pipeline == "stockflow":
-        msf.run_all_scenarios(args.scenarios, args.years, timeseries=args.timeseries)
+        msf.run_all_scenarios(
+            scenarios=scenarios, years=years, timeseries=args.timeseries, config=cfg
+        )
         print(
             "✔ Stock‑flow scenarios have been generated and saved to the results directory."
         )
@@ -84,11 +115,14 @@ def main() -> None:
             print("⚠ PyPSA export is currently only supported for the cost pipeline.")
     elif args.pipeline == "cost":
         df_full, _ = mc.run_all_scenarios(
-            args.scenarios,
-            args.years,
+            scenarios=scenarios,
+            years=years,
             optimise=args.optimise,
             timeseries=args.timeseries,
-            solver=args.solver,
+            solver=solver,
+            config=cfg,
+            min_clean_share=min_clean_share,
+            max_firewood_share=max_firewood_share,
         )
         print(
             "✔ Cost analysis scenarios have been generated and saved to the results directory."

@@ -33,6 +33,26 @@ with underscores.
   ``glpsol`` binary and ``--solver gurobi`` needs a licensed Gurobi
   installation.
 
+## Configuration
+
+Default scenarios, model years, policy constraints and solver
+preferences are defined in `config/scenarios.yaml`. An equivalent JSON
+file (`config/scenarios.json`) is also provided. The YAML structure is
+straightforward::
+
+```yaml
+scenarios: [bau, clean_push, biogas_incentive]
+years: [2030, 2040, 2050]
+constraints:
+  min_clean_share: 0.4
+  max_firewood_share: 0.3
+solver: cbc
+```
+
+To use a custom configuration, pass ``--config path/to/file.yaml`` to
+``main.py``. Individual options can be overridden on the command line,
+e.g. ``--min-clean-share 0.5``.
+
 ## Preparing ERA5 weather cutouts
 
 Some analyses rely on hourly weather variables from the ERA5 reanalysis.
@@ -102,7 +122,8 @@ outside the repository (e.g. in a release asset or shared drive).
    technology and a `Summary` sheet with total costs by scenario and
    year. When optimisation is enabled, policy constraints for the
    minimum clean share and maximum firewood share are taken from
-   `config.py`.
+   the configuration file (`config/scenarios.yaml`) and can be
+   overridden with ``--min-clean-share`` or ``--max-firewood-share``.
 
    Append ``--pypsa-export`` to additionally produce CSV files
    compatible with `PyPSA‑Earth <https://pypsa-earth.readthedocs.io/>`_:

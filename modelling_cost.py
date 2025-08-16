@@ -43,12 +43,7 @@ from spatial_config import (
 from technology_adoption_model import get_tech_mix_by_scenario
 from model import run_cost_fixed_mix, run_cost_minimise_cost, pulp
 from energy_demand_model import disaggregate_to_hourly
-from config import (
-    SCENARIOS,
-    YEARS,
-    MIN_CLEAN_SHARE,
-    MAX_FIREWOOD_SHARE,
-)
+from config import CONFIG, load_config
 from paths import get_data_path
 
 DISCOUNT_RATE = 0.05
@@ -181,7 +176,10 @@ def run_all_scenarios(
     years: List[int] | None = None,
     optimise: bool = False,
     timeseries: str = "none",
-    solver: str = "cbc",
+    solver: str | None = None,
+    config: Dict | str | None = None,
+    min_clean_share: float | None = None,
+    max_firewood_share: float | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """Execute the cost optimisation pipeline across all scenarios and years.
@@ -192,15 +190,26 @@ def run_all_scenarios(
     Parameters
     ----------
     scenarios : list, optional
-        Scenario names to evaluate. Defaults to :data:`config.SCENARIOS`.
+        Scenario names to evaluate. Defaults to the values defined in the
+        configuration file.
     years : list, optional
-        Model years to process. Defaults to :data:`config.YEARS`.
+        Model years to process. Defaults to the configuration file.
     optimise : bool, optional
         If ``True``, solve a least-cost optimisation using PuLP.
         Otherwise use the fixed adoption shares.
     solver : str, optional
         Optimisation solver to use when ``optimise`` is ``True``.
-        Choices are ``"cbc"``, ``"glpk"`` and ``"gurobi"``.
+        Choices are ``"cbc"``, ``"glpk"`` and ``"gurobi"``. Defaults to the
+        ``solver`` entry in the configuration.
+    config : dict or str, optional
+        Configuration dictionary or path to a YAML/JSON file. When omitted the
+        built-in default configuration is used.
+    min_clean_share : float, optional
+        Override for the minimum clean-technology share constraint. Falls back
+        to ``constraints.min_clean_share`` from the configuration.
+    max_firewood_share : float, optional
+        Override for the maximum traditional firewood share constraint. Falls
+        back to ``constraints.max_firewood_share`` from the configuration.
 
     Returns
     -------
@@ -208,8 +217,25 @@ def run_all_scenarios(
         A tuple containing the detailed results for each region and the
         summary of total costs by scenario and year.
     """
-    scenarios = scenarios or SCENARIOS
-    years = years or YEARS
+    cfg = (
+        load_config(config) if isinstance(config, str)
+        else config if isinstance(config, dict)
+        else CONFIG
+    )
+    scenarios = scenarios or cfg.get("scenarios", [])
+    years = years or cfg.get("years", [])
+    constraints = cfg.get("constraints", {})
+    min_clean_share = (
+        min_clean_share
+        if min_clean_share is not None
+        else constraints.get("min_clean_share", 0.0)
+    )
+    max_firewood_share = (
+        max_firewood_share
+        if max_firewood_share is not None
+        else constraints.get("max_firewood_share", 1.0)
+    )
+    solver = solver or cfg.get("solver", "cbc")
     os.makedirs("results", exist_ok=True)
 
     if optimise and pulp is None:
@@ -257,8 +283,8 @@ def run_all_scenarios(
                         year,
                         reg,
                         demand,
-                        MIN_CLEAN_SHARE,
-                        MAX_FIREWOOD_SHARE,
+                        min_clean_share,
+                        max_firewood_share,
                         tech_costs,
                         solver=solver,
                     )
